@@ -1,4 +1,6 @@
-tools:
-	go build -v -o account ./cmd/accounts
+.PHONY: accounts
+
+accounts:
+	go build -v -o ./build/accounts ./cmd/accounts
 	@echo "Done building."
-	@echo "Run \"./account\" to launch account manager."
+	@echo "Run \"./accounts\" to launch account manager."

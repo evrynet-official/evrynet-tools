@@ -1,7 +1,6 @@
 package accounts
 
 import (
-	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -35,10 +34,6 @@ func TestGenerateAccount(t *testing.T) {
 					number: 3,
 					seed:   "test_1",
 				},
-				{
-					number: 2,
-					seed:   "test_1",
-				},
 			},
 			want: []account{
 				{
@@ -58,15 +53,36 @@ func TestGenerateAccount(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "The privatekey of account 1,2 is different from the prevous test if seed is different",
+			args: []args{
+				{
+					number: 2,
+					seed:   "test_change",
+				},
+			},
+			want: []account{
+				{
+					PriKey:  "7a7c049240033b1d4ed4d03877e9ab33d3c43d22cffda5132f476fda48529721",
+					PubKey:  "04194419aa99c81f30d09c6c50519d258377a26cfa61222fa4ebc596919138dcd744d913978e4ee50cc3c4ad28dd2fa1d78d7ed4066dac2d231494a771f96a8f2b",
+					Address: "0x0AB5bCa03792c104C3B2D5D9EbEF48A1234f30A9",
+				},
+				{
+					PriKey:  "78d454164dcc867b47f762f826308c70f48420572aceb430cdd88a1657a7d33d",
+					PubKey:  "040885baea472b3e24231d4c992384ae54e122e0bc15a0fa095767200d07409371f1c263ebbae4804fd306c84db4e4bf5580223e324ada0f8bea7478a98f65cb2c",
+					Address: "0x1638084DAfC21cA4e8484e528F33C24611321d2A",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			for _, arg := range tt.args {
-				for i := 0; i < arg.number; i++ {
-					acc, err := GenerateAccount(arg.seed + strconv.Itoa(i))
+				accs, err := GenerateAccount(arg.number, arg.seed)
+				for i, acc := range accs {
 					assert.NoError(t, err)
-					assert.Equal(t, tt.want[i].PriKey, acc.PrivateKey())
-					assert.Equal(t, tt.want[i].PubKey, acc.PublicKey())
+					assert.Equal(t, tt.want[i].PriKey, acc.PrivateKeyStr())
+					assert.Equal(t, tt.want[i].PubKey, acc.PublicKeyStr())
 					assert.Equal(t, tt.want[i].Address, acc.Address.Hex())
 				}
 			}
