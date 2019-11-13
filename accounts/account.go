@@ -27,7 +27,7 @@ func (a *Account) PublicKeyStr() string {
 	return hex.EncodeToString(crypto.FromECDSAPub(a.PubKey))
 }
 
-func GenerateAccount(num int, seed string) ([]*Account, error) {
+func GenerateAccounts(num int, seed string) ([]*Account, error) {
 	var accs []*Account
 	for i := 0; i < num; i++ {
 		seedBytes := []byte(seed + strconv.Itoa(i))

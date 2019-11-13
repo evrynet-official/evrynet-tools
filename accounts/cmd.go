@@ -29,11 +29,13 @@ func NewAccountsFlags() []cli.Flag {
 
 // CreateAccounts will print created accounts & write to accounts.json file
 func CreateAccounts(ctx *cli.Context) error {
-	num := ctx.Int(numAccountsFlag.Name)
-	seed := ctx.String(seedFlag.Name)
+	var (
+		num  = ctx.Int(numAccountsFlag.Name)
+		seed = ctx.String(seedFlag.Name)
+	)
 
 	// generate accounts
-	accs, err := GenerateAccount(num, seed)
+	accs, err := GenerateAccounts(num, seed)
 	if err != nil {
 		fmt.Println("Fail to generate new account!", "Err:", err)
 		return err

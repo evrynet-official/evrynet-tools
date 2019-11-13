@@ -78,7 +78,7 @@ func TestGenerateAccount(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			for _, arg := range tt.args {
-				accs, err := GenerateAccount(arg.number, arg.seed)
+				accs, err := GenerateAccounts(arg.number, arg.seed)
 				for i, acc := range accs {
 					assert.NoError(t, err)
 					assert.Equal(t, tt.want[i].PriKey, acc.PrivateKeyStr())
