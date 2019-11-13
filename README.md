@@ -4,15 +4,15 @@
 
 ## Build accounts command line interface
 * Go 1.12+
-```
+```shell script
 $ make accounts
-$ ./account -help
+$ ./build/accounts -help
 
 NAME:
-   account - The account-tools command line interface
+   accounts - The account-tools command line interface
 
 USAGE:
-   account [global options] command [command options] [arguments...]
+   accounts [global options] command [command options] [arguments...]
 
 COMMANDS:
    create   Create accounts
@@ -56,3 +56,28 @@ To generate accounts you can use this command
 }
 ```
 </details>
+
+## Build transactions command line interface  
+```shell script
+$ make transactions
+$ ./build/transactions -h
+
+NAME:
+   transactions - The transactions command line interface
+
+USAGE:
+   transactions [global options] command [command options] [arguments...]
+
+VERSION:
+   0.0.0
+
+COMMANDS:
+   flood    Send tx flood
+   help, h  Shows a list of commands or help for one command
+
+GLOBAL OPTIONS:
+   --help, -h     show help
+   --version, -v  print the version
+```  
+To use tx flood you can use this command  
+`./build/transactions flood --numacc 50 --numtxperacc 1 --seed testnet --rpcendpoint "http://0.0.0.0:22001"`
