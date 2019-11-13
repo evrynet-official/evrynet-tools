@@ -17,6 +17,15 @@ import (
 	"github.com/evrynet-official/evrynet-client/core/types"
 )
 
+// ClientInterface
+type ClientInterface interface {
+	NonceAt(background context.Context, addresses common.Address, blockNumber *big.Int) (uint64, error)
+	SuggestGasPrice(background context.Context) (*big.Int, error)
+	SendTransaction(background context.Context, transaction *types.Transaction) error
+	TransactionReceipt(background context.Context, hash common.Hash) (*types.Receipt, error)
+	BalanceAt(background context.Context, addresses common.Address, blockNumber *big.Int) (*big.Int, error)
+}
+
 //Depositor maintains the balance of list of wallet to be above a min level
 type Depositor struct {
 	sugar               *zap.SugaredLogger
@@ -64,12 +73,12 @@ func WithNumWorkers(numWorkers int) Option {
 }
 
 //NewDepositor returns a depositor
-func NewDepositor(sugar *zap.SugaredLogger, opt *bind.TransactOpts, walletAddrs []common.Address, client ClientInterface, min, exp, chainID *big.Int, opts ...Option) *Depositor {
+func NewDepositor(sugar *zap.SugaredLogger, opt *bind.TransactOpts, walletAddrs []common.Address, ethClient ClientInterface, min, exp, chainID *big.Int, opts ...Option) *Depositor {
 	depositor := &Depositor{
 		sugar:           sugar,
 		opt:             opt,
 		walletAddresses: walletAddrs,
-		client:          client,
+		client:          ethClient,
 		sendEthHook:     func() {},
 		minBalance:      min,
 		expectBalance:   exp,
