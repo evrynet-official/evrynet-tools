@@ -23,7 +23,6 @@ const (
 	GasLimit     = 1000000
 	testBal1     = 1000000 //1e6
 	testBal2     = 2000000 //2e6
-	testMinBal   = 1000001
 	testExpBal   = 3000000
 	testGasLimit = 100000000
 	testChainID  = 15
@@ -58,7 +57,7 @@ func TestDepositor(t *testing.T) {
 
 	zapLogger, _, err := zapLog.NewSugaredLogger(nil)
 	sim := backends.NewSimulatedBackend(genAlloc, testGasLimit)
-	dep := NewDepositor(zapLogger, opt, wAddrs, sim, big.NewInt(testMinBal), big.NewInt(testExpBal), big.NewInt(testChainID),
+	dep := NewDepositor(zapLogger, opt, wAddrs, sim, big.NewInt(testExpBal), big.NewInt(testChainID),
 		WithSendETHHook(sim.Commit),
 		WithCheckMiningInterval(0),
 		WithGasLimit(GasLimit),

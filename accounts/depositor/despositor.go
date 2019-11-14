@@ -36,7 +36,6 @@ type Depositor struct {
 	checkMiningInterval time.Duration
 	sendEthHook         func()
 	expectBalance       *big.Int
-	minBalance          *big.Int
 	numWorkers          int
 	chainID             *big.Int
 }
@@ -73,14 +72,13 @@ func WithNumWorkers(numWorkers int) Option {
 }
 
 //NewDepositor returns a depositor
-func NewDepositor(sugar *zap.SugaredLogger, opt *bind.TransactOpts, walletAddrs []common.Address, ethClient ClientInterface, min, exp, chainID *big.Int, opts ...Option) *Depositor {
+func NewDepositor(sugar *zap.SugaredLogger, opt *bind.TransactOpts, walletAddrs []common.Address, ethClient ClientInterface, exp, chainID *big.Int, opts ...Option) *Depositor {
 	depositor := &Depositor{
 		sugar:           sugar,
 		opt:             opt,
 		walletAddresses: walletAddrs,
 		client:          ethClient,
 		sendEthHook:     func() {},
-		minBalance:      min,
 		expectBalance:   exp,
 		chainID:         chainID,
 	}
@@ -173,10 +171,9 @@ func (dp *Depositor) CheckAndDeposit() error {
 		logger := logger.With(
 			"address", addr.Hex(),
 			"balance", bal.String(),
-			"min_balance", dp.minBalance.String(),
 			"expected_balance", dp.expectBalance.String(),
 		)
-		if bal.Cmp(dp.minBalance) < 0 {
+		if bal.Cmp(dp.expectBalance) < 0 {
 			diff := big.NewInt(0).Sub(dp.expectBalance, bal)
 			logger.Infow("wallet balance is insufficient, depositing funds from bank", "deposit_amount", diff.String())
 			tx, err := dp.sendETH(addr, diff)
