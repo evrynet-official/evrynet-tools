@@ -59,25 +59,28 @@ To generate accounts you can use this command
 
 ## Build transactions command line interface  
 ```shell script
-$ make transactions
-$ ./build/transactions -h
+$ make tx_flood
+$ ./build/tx_flood -h
 
 NAME:
-   transactions - The transactions command line interface
+   tx_flood - The tx_flood command line interface
 
 USAGE:
-   transactions [global options] command [command options] [arguments...]
+   tx_flood [global options] command [command options] [arguments...]
 
 VERSION:
-   0.0.0
+   0.0.1
 
 COMMANDS:
-   flood    Send tx flood
    help, h  Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
-   --help, -h     show help
-   --version, -v  print the version
+   --num value             Number of accounts want to generate (default: 4)
+   --seed value            Seed to generate private key account (default: "evrynet")
+   --num-tx-per-acc value  Number of transactions want to use for an account (default: 1)
+   --rpcendpoint value     RPC endpoint to send request (default: "http://0.0.0.0:22001")
+   --help, -h              show help
+   --version, -v           print the version
 ```  
 To use tx flood you can use this command  
-`./build/transactions flood --numacc 50 --numtxperacc 1 --seed testnet --rpcendpoint "http://0.0.0.0:22001"`
+`./build/tx_flood --num 3 --num-tx-per-acc 2 --seed testnet --rpcendpoint "http://0.0.0.0:22001"`

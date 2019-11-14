@@ -1,7 +1,8 @@
-package transactions
+package tx_flood
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/big"
 	"math/rand"
@@ -19,78 +20,84 @@ type TxFlood struct {
 	NumAcc      int
 	NumTxPerAcc int
 	Seed        string
-	RPCEndpoint string
-	err         chan error
+	Ethclient   *ethclient.Client
+	Accounts    []*accounts.Account
 }
 
-func (tf *TxFlood) floodTx() error {
-	tf.err = make(chan error)
+func (tf *TxFlood) Start() error {
+	var (
+		errChan     = make(chan error)
+		complete100 = true
+	)
 
-	accs, err := accounts.GenerateAccounts(tf.NumAcc, tf.Seed)
-	if err != nil {
-		return err
-	}
-
+	// Start sending tx flood
 	var wg sync.WaitGroup
-	wg.Add(tf.NumAcc * tf.NumTxPerAcc)
-	for _, acc := range accs {
-		for n := 0; n < tf.NumTxPerAcc; n++ {
-			go tf.sendTx(&wg, acc, accs)
-		}
+	for _, acc := range tf.Accounts {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for n := 0; n < tf.NumTxPerAcc; n++ {
+				errChan <- tf.sendTx(tf.Ethclient, acc, tf.Accounts)
+			}
+		}()
 	}
 
+	// Using goroutine for bypass stuck
 	go func() {
 		wg.Wait()
-		close(tf.err)
+		close(errChan)
 	}()
 
-	for err := range tf.err {
+	// Get error & print to know which tx fail
+	for err := range errChan {
 		if err != nil {
-			return err
+			fmt.Println(err)
+			complete100 = false
 		}
 	}
-	return nil
+
+	if complete100 {
+		return nil
+	}
+	return errors.New("fail to send some transactions")
 }
 
-func (tf *TxFlood) sendTx(wg *sync.WaitGroup, acc *accounts.Account, accs []*accounts.Account) {
-	defer wg.Done()
-
-	ethClient, err := ethclient.Dial(tf.RPCEndpoint)
-	if err != nil {
-		tf.err <- err
-	}
-
+func (tf *TxFlood) sendTx(ethClient *ethclient.Client, acc *accounts.Account, accs []*accounts.Account) error {
 	rand.Seed(time.Now().UnixNano())
 	switch rand.Intn(1) {
 	case 0: // Send Evr
 		nonce, err := ethClient.PendingNonceAt(context.Background(), acc.Address)
 		if err != nil {
-			tf.err <- err
+			return err
 		}
 		gasPrice, err := ethClient.SuggestGasPrice(context.Background())
 		if err != nil {
-			tf.err <- err
+			return err
 		}
 
 		genesisBlock, err := ethClient.HeaderByNumber(context.Background(), nil)
 		if err != nil {
-			tf.err <- err
+			return err
 		}
 
 		randAcc := accs[rand.Intn(len(accs))]
 		if !reflect.DeepEqual(acc.Address, randAcc.Address) {
-			amount := big.NewInt(rand.Int63n(10))
+			amount := big.NewInt(rand.Int63n(10) + 1) // Send at least 1 EVR
 			transaction := types.NewTransaction(nonce, randAcc.Address, amount, genesisBlock.GasLimit, gasPrice, nil)
 			transaction, err = types.SignTx(transaction, types.HomesteadSigner{}, randAcc.PriKey)
 			if err != nil {
-				tf.err <- err
+				return err
 			}
 
 			err = ethClient.SendTransaction(context.Background(), transaction)
+			infoTx := fmt.Sprintf("Sent %d EVR from %s => %s", amount, acc.Address.Hex(), randAcc.Address.Hex())
 			if err != nil {
-				tf.err <- err
+				return errors.New(fmt.Sprintf("[x] %s\n\tError: %s", infoTx, err.Error()))
 			}
-			fmt.Printf("Address %s send %d EVR to %s \n", acc.Address.Hex(), amount, randAcc.Address.Hex())
+			fmt.Printf("[v] %s\n", infoTx)
 		}
+	default:
+		return errors.New("not support for this type")
 	}
+	return nil
 }

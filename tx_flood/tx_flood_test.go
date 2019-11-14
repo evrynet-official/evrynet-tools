@@ -1,8 +1,10 @@
-package transactions
+package tx_flood
 
 import (
 	"testing"
 
+	"github.com/evrynet-official/evrynet-client/ethclient"
+	"github.com/evrynet-official/evrynet-tools/accounts"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,7 +19,6 @@ func TestTxFlood_floodTx(t *testing.T) {
 				NumAcc:      5,
 				NumTxPerAcc: 2,
 				Seed:        "testnet",
-				RPCEndpoint: "http://0.0.0.0:22001",
 			},
 		},
 		{
@@ -26,13 +27,14 @@ func TestTxFlood_floodTx(t *testing.T) {
 				NumAcc:      200,
 				NumTxPerAcc: 2,
 				Seed:        "testnet",
-				RPCEndpoint: "http://0.0.0.0:22001",
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.NoError(t, tt.txFlood.floodTx())
+			tt.txFlood.Accounts, _ = accounts.GenerateAccounts(tt.txFlood.NumAcc, tt.txFlood.Seed)
+			tt.txFlood.Ethclient, _ = ethclient.Dial("http://0.0.0.0:22001")
+			assert.NoError(t, tt.txFlood.Start())
 		})
 	}
 }
