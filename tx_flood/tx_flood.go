@@ -22,14 +22,22 @@ type TxFlood struct {
 	NumAcc      int
 	NumTxPerAcc int
 	Seed        string
-	Ethclient   *ethclient.Client
+	EvrClient   *ethclient.Client
 	Accounts    []*accounts.Account
+}
+
+func handleTxErr(errCh chan error) {
+	for err := range errCh {
+		if err != nil {
+			fmt.Printf("failed to send tx, error %s", err)
+		}
+	}
 }
 
 func (tf *TxFlood) Start() error {
 	var (
-		errChan     = make(chan error)
-		complete100 = true
+		errChan = make(chan error)
+		success = true
 	)
 
 	// Start sending tx flood
@@ -38,8 +46,9 @@ func (tf *TxFlood) Start() error {
 		wg.Add(1)
 		go func(acc *accounts.Account) {
 			defer wg.Done()
-			nonce, err := tf.Ethclient.NonceAt(context.Background(), acc.Address, nil)
+			nonce, err := tf.EvrClient.NonceAt(context.Background(), acc.Address, nil)
 			if err != nil {
+				success = false
 				errChan <- err
 			}
 
@@ -50,23 +59,15 @@ func (tf *TxFlood) Start() error {
 		}(acc)
 	}
 
-	// Using goroutine for bypass stuck
-	go func() {
-		wg.Wait()
-		close(errChan)
-	}()
+	go handleTxErr(errChan)
 
-	// Get error & print to know which tx fail
-	for err := range errChan {
-		if err != nil {
-			fmt.Println(err)
-			complete100 = false
-		}
-	}
+	wg.Wait()
+	close(errChan)
 
-	if complete100 {
+	if success {
 		return nil
 	}
+
 	return errors.New("fail to send some transactions")
 }
 
@@ -74,12 +75,12 @@ func (tf *TxFlood) sendTx(acc *accounts.Account, nonce *big.Int) error {
 	rand.Seed(time.Now().UnixNano())
 	switch rand.Intn(1) {
 	case 0: // Send Evr
-		gasPrice, err := tf.Ethclient.SuggestGasPrice(context.Background())
+		gasPrice, err := tf.EvrClient.SuggestGasPrice(context.Background())
 		if err != nil {
 			return err
 		}
 
-		genesisBlock, err := tf.Ethclient.HeaderByNumber(context.Background(), nil)
+		genesisBlock, err := tf.EvrClient.HeaderByNumber(context.Background(), nil)
 		if err != nil {
 			return err
 		}
@@ -93,7 +94,7 @@ func (tf *TxFlood) sendTx(acc *accounts.Account, nonce *big.Int) error {
 				return err
 			}
 
-			err = tf.Ethclient.SendTransaction(context.Background(), transaction)
+			err = tf.EvrClient.SendTransaction(context.Background(), transaction)
 			if err != nil {
 				return errors.Wrapf(err, "failed to send %d EVR from %s", amount, acc.Address.Hex())
 			}

@@ -45,7 +45,7 @@ func NewTxFloodFromFlags(ctx *cli.Context) (tf *TxFlood, err error) {
 		return nil, err
 	}
 
-	tf.Ethclient, err = NewEthereumClientFromFlag(ctx)
+	tf.EvrClient, err = NewEthereumClientFromFlag(ctx)
 	if err != nil {
 		return nil, err
 	}
