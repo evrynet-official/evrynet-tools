@@ -10,12 +10,12 @@ import (
 )
 
 var (
-	numAccountsFlag = cli.IntFlag{
+	NumAccountsFlag = cli.IntFlag{
 		Name:  "num",
 		Usage: "Number of accounts want to generate",
 		Value: 4,
 	}
-	seedFlag = cli.StringFlag{
+	SeedFlag = cli.StringFlag{
 		Name:  "seed",
 		Usage: "Seed to generate private key account",
 		Value: "evrynet",
@@ -24,14 +24,14 @@ var (
 
 // NewAccountsFlags return flags to generate accounts
 func NewAccountsFlags() []cli.Flag {
-	return []cli.Flag{numAccountsFlag, seedFlag}
+	return []cli.Flag{NumAccountsFlag, SeedFlag}
 }
 
 // CreateAccounts will print created accounts & write to accounts.json file
 func CreateAccounts(ctx *cli.Context) error {
 	var (
-		num  = ctx.Int(numAccountsFlag.Name)
-		seed = ctx.String(seedFlag.Name)
+		num  = ctx.Int(NumAccountsFlag.Name)
+		seed = ctx.String(SeedFlag.Name)
 	)
 
 	// generate accounts

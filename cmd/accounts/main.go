@@ -13,7 +13,6 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "accounts"
 	app.Usage = "The accounts command line interface"
-	app.Flags = append(app.Flags, accounts.NewAccountsFlags()...)
 	app.Commands = []cli.Command{
 		{
 			Action:      accounts.CreateAccounts,

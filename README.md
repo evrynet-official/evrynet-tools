@@ -4,15 +4,15 @@
 
 ## Build accounts command line interface
 * Go 1.12+
-```
+```shell script
 $ make accounts
-$ ./account -help
+$ ./build/accounts -help
 
 NAME:
-   account - The account-tools command line interface
+   accounts - The account-tools command line interface
 
 USAGE:
-   account [global options] command [command options] [arguments...]
+   accounts [global options] command [command options] [arguments...]
 
 COMMANDS:
    create   Create accounts
@@ -56,3 +56,31 @@ To generate accounts you can use this command
 }
 ```
 </details>
+
+## Build transactions command line interface  
+```shell script
+$ make tx_flood
+$ ./build/tx_flood -h
+
+NAME:
+   tx_flood - The tx_flood command line interface
+
+USAGE:
+   tx_flood [global options] command [command options] [arguments...]
+
+VERSION:
+   0.0.1
+
+COMMANDS:
+   help, h  Shows a list of commands or help for one command
+
+GLOBAL OPTIONS:
+   --num value             Number of accounts want to generate (default: 4)
+   --seed value            Seed to generate private key account (default: "evrynet")
+   --num-tx-per-acc value  Number of transactions want to use for an account (default: 1)
+   --rpcendpoint value     RPC endpoint to send request (default: "http://0.0.0.0:22001")
+   --help, -h              show help
+   --version, -v           print the version
+```  
+To use tx flood you can use this command  
+`./build/tx_flood --num 3 --num-tx-per-acc 2 --seed testnet --rpcendpoint "http://0.0.0.0:22001"`
