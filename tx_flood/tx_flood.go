@@ -93,7 +93,7 @@ func (tf *TxFlood) sendTx(acc *accounts.Account) error {
 			err = tf.Ethclient.SendTransaction(context.Background(), transaction)
 			infoTx := fmt.Sprintf("Sent %d EVR from %s => %s", amount, acc.Address.Hex(), randAcc.Address.Hex())
 			if err != nil {
-				return errors.New(fmt.Sprintf("[x] %s\n\tError: %s", infoTx, err.Error()))
+return errors.Wrapf(err, "failed to send %d EVR from %s", amount, acc.Address.Hex())
 			}
 			fmt.Printf("[v] %s\n", infoTx)
 		}
