@@ -32,8 +32,11 @@ func TestTxFlood_floodTx(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.txFlood.Accounts, _ = accounts.GenerateAccounts(tt.txFlood.NumAcc, tt.txFlood.Seed)
-			tt.txFlood.Ethclient, _ = ethclient.Dial("http://0.0.0.0:22001")
+			var err error
+			tt.txFlood.Accounts, err = accounts.GenerateAccounts(tt.txFlood.NumAcc, tt.txFlood.Seed)
+			assert.NoError(t, err)
+			tt.txFlood.Ethclient, err = ethclient.Dial("http://0.0.0.0:22001")
+			assert.NoError(t, err)
 			assert.NoError(t, tt.txFlood.Start())
 		})
 	}

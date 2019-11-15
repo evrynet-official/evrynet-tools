@@ -2,13 +2,14 @@ package tx_flood
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"math/big"
 	"math/rand"
 	"reflect"
 	"sync"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/evrynet-official/evrynet-client/core/types"
 	"github.com/evrynet-official/evrynet-client/ethclient"
@@ -34,12 +35,12 @@ func (tf *TxFlood) Start() error {
 	var wg sync.WaitGroup
 	for _, acc := range tf.Accounts {
 		wg.Add(1)
-		go func() {
+		go func(acc *accounts.Account) {
 			defer wg.Done()
 			for n := 0; n < tf.NumTxPerAcc; n++ {
-				errChan <- tf.sendTx(tf.Ethclient, acc, tf.Accounts)
+				errChan <- tf.sendTx(acc)
 			}
-		}()
+		}(acc)
 	}
 
 	// Using goroutine for bypass stuck
@@ -62,25 +63,25 @@ func (tf *TxFlood) Start() error {
 	return errors.New("fail to send some transactions")
 }
 
-func (tf *TxFlood) sendTx(ethClient *ethclient.Client, acc *accounts.Account, accs []*accounts.Account) error {
+func (tf *TxFlood) sendTx(acc *accounts.Account) error {
 	rand.Seed(time.Now().UnixNano())
 	switch rand.Intn(1) {
 	case 0: // Send Evr
-		nonce, err := ethClient.PendingNonceAt(context.Background(), acc.Address)
+		nonce, err := tf.Ethclient.PendingNonceAt(context.Background(), acc.Address)
 		if err != nil {
 			return err
 		}
-		gasPrice, err := ethClient.SuggestGasPrice(context.Background())
-		if err != nil {
-			return err
-		}
-
-		genesisBlock, err := ethClient.HeaderByNumber(context.Background(), nil)
+		gasPrice, err := tf.Ethclient.SuggestGasPrice(context.Background())
 		if err != nil {
 			return err
 		}
 
-		randAcc := accs[rand.Intn(len(accs))]
+		genesisBlock, err := tf.Ethclient.HeaderByNumber(context.Background(), nil)
+		if err != nil {
+			return err
+		}
+
+		randAcc := tf.Accounts[rand.Intn(len(tf.Accounts))]
 		if !reflect.DeepEqual(acc.Address, randAcc.Address) {
 			amount := big.NewInt(rand.Int63n(10) + 1) // Send at least 1 EVR
 			transaction := types.NewTransaction(nonce, randAcc.Address, amount, genesisBlock.GasLimit, gasPrice, nil)
@@ -89,7 +90,7 @@ func (tf *TxFlood) sendTx(ethClient *ethclient.Client, acc *accounts.Account, ac
 				return err
 			}
 
-			err = ethClient.SendTransaction(context.Background(), transaction)
+			err = tf.Ethclient.SendTransaction(context.Background(), transaction)
 			infoTx := fmt.Sprintf("Sent %d EVR from %s => %s", amount, acc.Address.Hex(), randAcc.Address.Hex())
 			if err != nil {
 				return errors.New(fmt.Sprintf("[x] %s\n\tError: %s", infoTx, err.Error()))
