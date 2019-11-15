@@ -50,19 +50,18 @@ func (tf *TxFlood) Start() error {
 		}(acc)
 	}
 
-	// Using goroutine for bypass stuck
 	go func() {
-		wg.Wait()
-		close(errChan)
+		// Get error & print to know which tx fail
+		for err := range errChan {
+			if err != nil {
+				fmt.Println(err)
+				complete100 = false
+			}
+		}
 	}()
 
-	// Get error & print to know which tx fail
-	for err := range errChan {
-		if err != nil {
-			fmt.Println(err)
-			complete100 = false
-		}
-	}
+	wg.Wait()
+	close(errChan)
 
 	if complete100 {
 		return nil
