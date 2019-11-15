@@ -11,6 +11,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/evrynet-official/evrynet-client/common"
 	"github.com/evrynet-official/evrynet-client/core/types"
 	"github.com/evrynet-official/evrynet-client/ethclient"
 
@@ -37,8 +38,14 @@ func (tf *TxFlood) Start() error {
 		wg.Add(1)
 		go func(acc *accounts.Account) {
 			defer wg.Done()
+			nonce, err := tf.Ethclient.NonceAt(context.Background(), acc.Address, nil)
+			if err != nil {
+				errChan <- err
+			}
+
+			manualNonce := big.NewInt(int64(nonce))
 			for n := 0; n < tf.NumTxPerAcc; n++ {
-				errChan <- tf.sendTx(acc)
+				errChan <- tf.sendTx(acc, manualNonce)
 			}
 		}(acc)
 	}
@@ -63,14 +70,10 @@ func (tf *TxFlood) Start() error {
 	return errors.New("fail to send some transactions")
 }
 
-func (tf *TxFlood) sendTx(acc *accounts.Account) error {
+func (tf *TxFlood) sendTx(acc *accounts.Account, nonce *big.Int) error {
 	rand.Seed(time.Now().UnixNano())
 	switch rand.Intn(1) {
 	case 0: // Send Evr
-		nonce, err := tf.Ethclient.PendingNonceAt(context.Background(), acc.Address)
-		if err != nil {
-			return err
-		}
 		gasPrice, err := tf.Ethclient.SuggestGasPrice(context.Background())
 		if err != nil {
 			return err
@@ -84,18 +87,18 @@ func (tf *TxFlood) sendTx(acc *accounts.Account) error {
 		randAcc := tf.Accounts[rand.Intn(len(tf.Accounts))]
 		if !reflect.DeepEqual(acc.Address, randAcc.Address) {
 			amount := big.NewInt(rand.Int63n(10) + 1) // Send at least 1 EVR
-			transaction := types.NewTransaction(nonce, randAcc.Address, amount, genesisBlock.GasLimit, gasPrice, nil)
-			transaction, err = types.SignTx(transaction, types.HomesteadSigner{}, randAcc.PriKey)
+			transaction := types.NewTransaction(nonce.Uint64(), randAcc.Address, amount, genesisBlock.GasLimit, gasPrice, nil)
+			transaction, err = types.SignTx(transaction, types.HomesteadSigner{}, acc.PriKey)
 			if err != nil {
 				return err
 			}
 
 			err = tf.Ethclient.SendTransaction(context.Background(), transaction)
-			infoTx := fmt.Sprintf("Sent %d EVR from %s => %s", amount, acc.Address.Hex(), randAcc.Address.Hex())
 			if err != nil {
-return errors.Wrapf(err, "failed to send %d EVR from %s", amount, acc.Address.Hex())
+				return errors.Wrapf(err, "failed to send %d EVR from %s", amount, acc.Address.Hex())
 			}
-			fmt.Printf("[v] %s\n", infoTx)
+			nonce = nonce.Add(nonce, common.Big1)
+			fmt.Printf("Sent %d EVR from %s => %s\n", amount, acc.Address.Hex(), randAcc.Address.Hex())
 		}
 	default:
 		return errors.New("not support for this type")

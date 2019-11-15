@@ -3,9 +3,10 @@ package tx_flood
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/evrynet-official/evrynet-client/ethclient"
 	"github.com/evrynet-official/evrynet-tools/accounts"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestTxFlood_floodTx(t *testing.T) {
