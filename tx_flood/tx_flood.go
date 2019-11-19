@@ -29,7 +29,7 @@ type TxFlood struct {
 func handleTxErr(errCh chan error) {
 	for err := range errCh {
 		if err != nil {
-			fmt.Printf("failed to send tx, error %s", err)
+			fmt.Printf("failed to send tx, error %s\n", err)
 		}
 	}
 }
@@ -46,7 +46,7 @@ func (tf *TxFlood) Start() error {
 		wg.Add(1)
 		go func(acc *accounts.Account) {
 			defer wg.Done()
-			nonce, err := tf.EvrClient.NonceAt(context.Background(), acc.Address, nil)
+			nonce, err := tf.EvrClient.PendingNonceAt(context.Background(), acc.Address)
 			if err != nil {
 				success = false
 				errChan <- err
