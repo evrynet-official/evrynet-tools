@@ -25,7 +25,6 @@ const (
 	testBal2     = 2000000 //2e6
 	testExpBal   = 3000000
 	testGasLimit = 100000000
-	testChainID  = 15
 )
 
 func TestDepositor(t *testing.T) {
@@ -33,7 +32,7 @@ func TestDepositor(t *testing.T) {
 	assert.NoError(t, err)
 	opt := bind.NewKeyedTransactor(pk)
 	opt.Signer = func(signer types.Signer, from common.Address, tx *types.Transaction) (*types.Transaction, error) {
-		return types.SignTx(tx, types.HomesteadSigner{}, pk)
+		return types.SignTx(tx, signer, pk)
 	}
 
 	var (
@@ -57,7 +56,7 @@ func TestDepositor(t *testing.T) {
 
 	zapLogger, _, err := zapLog.NewSugaredLogger(nil)
 	sim := backends.NewSimulatedBackend(genAlloc, testGasLimit)
-	dep := NewDepositor(zapLogger, opt, wAddrs, sim, big.NewInt(testExpBal), big.NewInt(testChainID),
+	dep := NewDepositor(zapLogger, opt, wAddrs, sim, big.NewInt(testExpBal),
 		WithSendETHHook(sim.Commit),
 		WithCheckMiningInterval(0),
 		WithGasLimit(GasLimit),

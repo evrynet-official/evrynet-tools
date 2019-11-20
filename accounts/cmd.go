@@ -11,8 +11,8 @@ import (
 	"github.com/evrynet-official/evrynet-client/common"
 	"github.com/evrynet-official/evrynet-client/core/types"
 	"github.com/evrynet-official/evrynet-client/crypto"
-	"github.com/evrynet-official/evrynet-client/ethclient"
-	depositor "github.com/evrynet-official/evrynet-tools/accounts/depositor"
+	"github.com/evrynet-official/evrynet-tools/accounts/depositor"
+	"github.com/evrynet-official/evrynet-tools/lib/app"
 	zapLog "github.com/evrynet-official/evrynet-tools/lib/log"
 
 	"github.com/urfave/cli"
@@ -39,21 +39,16 @@ var (
 		Usage: "The private key of sender",
 		Value: "ce900e4057ef7253ce737dccf3979ec4e74a19d595e8cc30c6c5ea92dfdd37f1",
 	}
-	expectedAmountFlag = cli.StringFlag{
-		Name:  "expectedamount",
-		Usage: "The amount sends to accounts (wei)",
+	expectedBalanceFlag = cli.StringFlag{
+		Name:  "expectedbalance",
+		Usage: "The expected balance of each account (wei)",
 		Value: "1000000000000000000",
-	}
-	rpcEndpointFlag = cli.StringFlag{
-		Name:  "rpcendpoint",
-		Usage: "RPC endpoint to send request",
-		Value: "http://0.0.0.0:22001",
 	}
 )
 
 // NewAccountsFlags return flags to generate accounts
 func NewAccountsFlags() []cli.Flag {
-	return []cli.Flag{NumAccountsFlag, SeedFlag, isSendTokenFlag, nodePkFlag, expectedAmountFlag, rpcEndpointFlag}
+	return []cli.Flag{NumAccountsFlag, SeedFlag, isSendTokenFlag, nodePkFlag, expectedBalanceFlag}
 }
 
 // CreateAccounts will print created accounts & write to accounts.json file
@@ -62,11 +57,9 @@ func CreateAccounts(ctx *cli.Context) error {
 		num         = ctx.Int(NumAccountsFlag.Name)
 		seed        = ctx.String(SeedFlag.Name)
 		isSendtoken = ctx.Int(isSendTokenFlag.Name)
-		rpcEndpoint = ctx.String(rpcEndpointFlag.Name)
 		nodePk      = ctx.String(nodePkFlag.Name)
-		amount      = ctx.String(expectedAmountFlag.Name)
+		amount      = ctx.String(expectedBalanceFlag.Name)
 		gasLimit    = big.NewInt(1000000).Uint64()
-		chainID     = big.NewInt(15)
 	)
 
 	expectedAmount, ok := new(big.Int).SetString(amount, 10)
@@ -82,7 +75,7 @@ func CreateAccounts(ctx *cli.Context) error {
 	}
 
 	if isSendtoken == 1 {
-		err = sendEvr(accs, nodePk, expectedAmount, chainID, gasLimit, rpcEndpoint)
+		err = sendEvr(ctx, accs, nodePk, expectedAmount, gasLimit)
 		if err != nil {
 			fmt.Println("Fail to send token to accounts!", "Err:", err)
 			return err
@@ -124,7 +117,7 @@ func writeAccounts(accs []*Account) {
 }
 
 // SendEvr will send evr token
-func sendEvr(accs []*Account, nodePk string, expectedAmount *big.Int, chainID *big.Int, gasLimit uint64, rpcEndpoint string) error {
+func sendEvr(ctx *cli.Context, accs []*Account, nodePk string, expectedBalance *big.Int, gasLimit uint64) error {
 	pk, err := crypto.HexToECDSA(nodePk)
 	if err != nil {
 		return err
@@ -140,18 +133,18 @@ func sendEvr(accs []*Account, nodePk string, expectedAmount *big.Int, chainID *b
 	}
 
 	opt.Signer = func(signer types.Signer, from common.Address, tx *types.Transaction) (*types.Transaction, error) {
-		return types.SignTx(tx, types.HomesteadSigner{}, pk)
+		return types.SignTx(tx, signer, pk)
 	}
 	zapLogger, _, err := zapLog.NewSugaredLogger(nil)
 	if err != nil {
 		return err
 	}
 
-	evrClient, err := ethclient.Dial(rpcEndpoint)
+	evrClient, err := app.NewEvrynetClientFromFlags(ctx)
 	if err != nil {
 		return err
 	}
-	dep := depositor.NewDepositor(zapLogger, opt, wAddrs, evrClient, expectedAmount, chainID,
+	dep := depositor.NewDepositor(zapLogger, opt, wAddrs, evrClient, expectedBalance,
 		depositor.WithGasLimit(gasLimit),
 	)
 	return dep.CheckAndDeposit()

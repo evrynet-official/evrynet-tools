@@ -37,7 +37,6 @@ type Depositor struct {
 	sendEthHook         func()
 	expectBalance       *big.Int
 	numWorkers          int
-	chainID             *big.Int
 }
 
 //Option provide initial behaviour of Depositor
@@ -72,7 +71,7 @@ func WithNumWorkers(numWorkers int) Option {
 }
 
 //NewDepositor returns a depositor
-func NewDepositor(sugar *zap.SugaredLogger, opt *bind.TransactOpts, walletAddrs []common.Address, ethClient ClientInterface, exp, chainID *big.Int, opts ...Option) *Depositor {
+func NewDepositor(sugar *zap.SugaredLogger, opt *bind.TransactOpts, walletAddrs []common.Address, ethClient ClientInterface, exp *big.Int, opts ...Option) *Depositor {
 	depositor := &Depositor{
 		sugar:           sugar,
 		opt:             opt,
@@ -80,7 +79,6 @@ func NewDepositor(sugar *zap.SugaredLogger, opt *bind.TransactOpts, walletAddrs 
 		client:          ethClient,
 		sendEthHook:     func() {},
 		expectBalance:   exp,
-		chainID:         chainID,
 	}
 	for _, opt := range opts {
 		opt(depositor)
@@ -88,10 +86,10 @@ func NewDepositor(sugar *zap.SugaredLogger, opt *bind.TransactOpts, walletAddrs 
 	return depositor
 }
 
-//sendETH will send and wait for transaction receipt before returning
-func (dp *Depositor) sendETH(to common.Address, amount *big.Int) (*types.Receipt, error) {
+//sendEVR will send and wait for transaction receipt before returning
+func (dp *Depositor) sendEVR(to common.Address, amount *big.Int) (*types.Receipt, error) {
 	var (
-		logger = dp.sugar.With("func", "sendETH", "wallet_addr", to.Hex(), "amount", amount)
+		logger = dp.sugar.With("func", "sendEVR", "wallet_addr", to.Hex(), "amount", amount)
 	)
 	nonce, err := dp.client.NonceAt(context.Background(), dp.opt.From, nil)
 	if err != nil {
@@ -102,7 +100,7 @@ func (dp *Depositor) sendETH(to common.Address, amount *big.Int) (*types.Receipt
 		return nil, err
 	}
 	tx := types.NewTransaction(nonce, to, amount, dp.gasLimit, gasPrice, nil)
-	signedTx, err := dp.opt.Signer(types.NewEIP155Signer(dp.chainID), dp.opt.From, tx)
+	signedTx, err := dp.opt.Signer(types.HomesteadSigner{}, dp.opt.From, tx)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +174,7 @@ func (dp *Depositor) CheckAndDeposit() error {
 		if bal.Cmp(dp.expectBalance) < 0 {
 			diff := big.NewInt(0).Sub(dp.expectBalance, bal)
 			logger.Infow("wallet balance is insufficient, depositing funds from bank", "deposit_amount", diff.String())
-			tx, err := dp.sendETH(addr, diff)
+			tx, err := dp.sendEVR(addr, diff)
 			if err != nil {
 				return err
 			}
