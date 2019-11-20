@@ -11,6 +11,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/evrynet-official/evrynet-client"
 	"github.com/evrynet-official/evrynet-client/common"
 	"github.com/evrynet-official/evrynet-client/core/types"
 	"github.com/evrynet-official/evrynet-client/ethclient"
@@ -75,20 +76,27 @@ func (tf *TxFlood) sendTx(acc *accounts.Account, nonce *big.Int) error {
 	rand.Seed(time.Now().UnixNano())
 	switch rand.Intn(1) {
 	case 0: // Send Evr
-		gasPrice, err := tf.EvrClient.SuggestGasPrice(context.Background())
-		if err != nil {
-			return err
-		}
-
-		genesisBlock, err := tf.EvrClient.HeaderByNumber(context.Background(), nil)
-		if err != nil {
-			return err
-		}
-
 		randAcc := tf.Accounts[rand.Intn(len(tf.Accounts))]
 		if !reflect.DeepEqual(acc.Address, randAcc.Address) {
 			amount := big.NewInt(rand.Int63n(10) + 1) // Send at least 1 EVR
-			transaction := types.NewTransaction(nonce.Uint64(), randAcc.Address, amount, genesisBlock.GasLimit, gasPrice, nil)
+
+			gasPrice, err := tf.EvrClient.SuggestGasPrice(context.Background())
+			if err != nil {
+				return err
+			}
+
+			msg := evrynet.CallMsg{
+				From:  acc.Address,
+				To:    &randAcc.Address,
+				Value: amount,
+				Data:  []byte{},
+			}
+			estGas, err := tf.EvrClient.EstimateGas(context.Background(), msg)
+			if err != nil {
+				return err
+			}
+
+			transaction := types.NewTransaction(nonce.Uint64(), randAcc.Address, amount, estGas, gasPrice, nil)
 			transaction, err = types.SignTx(transaction, types.HomesteadSigner{}, acc.PriKey)
 			if err != nil {
 				return err
