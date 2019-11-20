@@ -39,10 +39,10 @@ var (
 		Usage: "The private key of sender",
 		Value: "ce900e4057ef7253ce737dccf3979ec4e74a19d595e8cc30c6c5ea92dfdd37f1",
 	}
-	expectedAmountFlag = cli.Int64Flag{
+	expectedAmountFlag = cli.StringFlag{
 		Name:  "expectedamount",
-		Usage: "The amount sends to accounts",
-		Value: 1,
+		Usage: "The amount sends to accounts (wei)",
+		Value: "1000000000000000000",
 	}
 	rpcEndpointFlag = cli.StringFlag{
 		Name:  "rpcendpoint",
@@ -59,16 +59,21 @@ func NewAccountsFlags() []cli.Flag {
 // CreateAccounts will print created accounts & write to accounts.json file
 func CreateAccounts(ctx *cli.Context) error {
 	var (
-		num            = ctx.Int(NumAccountsFlag.Name)
-		seed           = ctx.String(SeedFlag.Name)
-		isSendtoken    = ctx.Int(isSendTokenFlag.Name)
-		rpcEndpoint    = ctx.String(rpcEndpointFlag.Name)
-		nodePk         = ctx.String(nodePkFlag.Name)
-		gasLimit       = big.NewInt(1000000).Uint64()
-		expectedAmount = big.NewInt(ctx.Int64(expectedAmountFlag.Name))
-		chainID        = big.NewInt(15)
+		num         = ctx.Int(NumAccountsFlag.Name)
+		seed        = ctx.String(SeedFlag.Name)
+		isSendtoken = ctx.Int(isSendTokenFlag.Name)
+		rpcEndpoint = ctx.String(rpcEndpointFlag.Name)
+		nodePk      = ctx.String(nodePkFlag.Name)
+		amount      = ctx.String(expectedAmountFlag.Name)
+		gasLimit    = big.NewInt(1000000).Uint64()
+		chainID     = big.NewInt(15)
 	)
 
+	expectedAmount, ok := new(big.Int).SetString(amount, 10)
+	if !ok {
+		fmt.Println("Failed to parse expected amount!", "amount:", amount)
+		return nil
+	}
 	// generate accounts
 	accs, err := GenerateAccounts(num, seed)
 	if err != nil {
