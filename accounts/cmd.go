@@ -2,6 +2,7 @@ package accounts
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/big"
@@ -51,38 +52,78 @@ func NewAccountsFlags() []cli.Flag {
 	return []cli.Flag{NumAccountsFlag, SeedFlag, isSendTokenFlag, nodePkFlag, expectedBalanceFlag}
 }
 
+// NewDepositFlags return flags to generate accounts
+func NewDepositFlags() []cli.Flag {
+	return []cli.Flag{NumAccountsFlag, SeedFlag, nodePkFlag, expectedBalanceFlag}
+}
+
+// CreateAccountsAndDeposit will print created accounts & write to accounts.json file and send token to accounts
+func CreateAccountsAndDeposit(ctx *cli.Context) error {
+	accounts, err := createAccounts(ctx)
+	if err != nil {
+		return err
+	}
+	err = sendToAccounts(ctx, accounts)
+	if err != nil {
+		return err
+	}
+
+	writeAccounts(accounts)
+	return nil
+}
+
 // CreateAccounts will print created accounts & write to accounts.json file
 func CreateAccounts(ctx *cli.Context) error {
 	var (
-		num         = ctx.Int(NumAccountsFlag.Name)
-		seed        = ctx.String(SeedFlag.Name)
 		isSendtoken = ctx.Int(isSendTokenFlag.Name)
+	)
+	accounts, err := createAccounts(ctx)
+	if err != nil {
+		return err
+	}
+	if isSendtoken == 1 {
+		err = sendToAccounts(ctx, accounts)
+		if err != nil {
+			return err
+		}
+	}
+
+	writeAccounts(accounts)
+	return nil
+}
+
+func sendToAccounts(ctx *cli.Context, accs []*Account) error {
+	var (
 		nodePk      = ctx.String(nodePkFlag.Name)
 		amount      = ctx.String(expectedBalanceFlag.Name)
 		gasLimit    = big.NewInt(1000000).Uint64()
 	)
-
 	expectedAmount, ok := new(big.Int).SetString(amount, 10)
 	if !ok {
-		fmt.Println("Failed to parse expected amount!", "amount:", amount)
-		return nil
+		fmt.Println("failed to parse expected amount", "amount:", amount)
+		return errors.New("failed to parse expected amount")
 	}
+	err := sendEvr(ctx, accs, nodePk, expectedAmount, gasLimit)
+	if err != nil {
+		fmt.Println("Fail to send token to accounts!", "Err:", err)
+		return err
+	}
+	return nil
+}
+
+func createAccounts(ctx *cli.Context) ([]*Account, error) {
+	var (
+		num         = ctx.Int(NumAccountsFlag.Name)
+		seed        = ctx.String(SeedFlag.Name)
+	)
+
 	// generate accounts
 	accs, err := GenerateAccounts(num, seed)
 	if err != nil {
 		fmt.Println("Fail to generate new account!", "Err:", err)
-		return err
+		return nil, err
 	}
-
-	if isSendtoken == 1 {
-		err = sendEvr(ctx, accs, nodePk, expectedAmount, gasLimit)
-		if err != nil {
-			fmt.Println("Fail to send token to accounts!", "Err:", err)
-			return err
-		}
-	}
-	writeAccounts(accs)
-	return nil
+	return accs, nil
 }
 
 func writeAccounts(accs []*Account) {
