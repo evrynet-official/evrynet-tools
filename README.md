@@ -6,7 +6,7 @@
 * Go 1.12+
 ```shell script
 $ make accounts
-$ ./build/accounts -help
+$ ./build/accounts/accounts -help
 
 NAME:
    accounts - The account-tools command line interface
@@ -24,10 +24,10 @@ GLOBAL OPTIONS:
 ```
 
 To generate accounts you can use this command  
-`./build/accounts/accounts create --num 5 --seed testnet --issendtoken 1 --expectedbalance "1000000000000000000" --nodepk "ce900e4057ef7253ce737dccf3979ec4e74a19d595e8cc30c6c5ea92dfdd37f1" --rpcendpoint "http://0.0.0.0:22001"`
+`./build/accounts/accounts create --num 5 --seed testnet`
 
 To deposit to accounts you can use this command  
-`./build/accounts/accounts deposit --num 10 --seed testnet --expectedbalance "1000000000000000000" --nodepk "ce900e4057ef7253ce737dccf3979ec4e74a19d595e8cc30c6c5ea92dfdd37f1" --rpcendpoint "http://0.0.0.0:22001"`
+`./build/accounts/accounts deposit --num 10 --seed testnet --expectedbalance "1000000000000000000" --senderpk "ce900e4057ef7253ce737dccf3979ec4e74a19d595e8cc30c6c5ea92dfdd37f1" --rpcendpoint "http://0.0.0.0:22001"`
 
 <details>
 <summary>Output</summary> 

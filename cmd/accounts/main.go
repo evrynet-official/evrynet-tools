@@ -7,7 +7,7 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/evrynet-official/evrynet-tools/accounts"
-	libApp "github.com/evrynet-official/evrynet-tools/lib/app"
+	"github.com/evrynet-official/evrynet-tools/lib/node"
 )
 
 func main() {
@@ -31,7 +31,6 @@ func createCommands() []cli.Command {
 		Description: `To prepare accounts`,
 	}
 	createAccountsCmd.Flags = accounts.NewAccountsFlags()
-	createAccountsCmd.Flags = append(createAccountsCmd.Flags, libApp.NewEvrynetNodeFlags()...)
 
 	depositCmd := cli.Command{
 		Action:      accounts.CreateAccountsAndDeposit,
@@ -40,7 +39,7 @@ func createCommands() []cli.Command {
 		Description: `Deposit EVR to the generated accounts`,
 	}
 	depositCmd.Flags = accounts.NewDepositFlags()
-	depositCmd.Flags = append(depositCmd.Flags, libApp.NewEvrynetNodeFlags()...)
+	depositCmd.Flags = append(depositCmd.Flags, node.NewEvrynetNodeFlags()...)
 
 	return []cli.Command{createAccountsCmd, depositCmd}
 }

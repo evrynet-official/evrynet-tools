@@ -13,30 +13,27 @@ import (
 	"github.com/evrynet-official/evrynet-client/core/types"
 	"github.com/evrynet-official/evrynet-client/crypto"
 	"github.com/evrynet-official/evrynet-tools/accounts/depositor"
-	"github.com/evrynet-official/evrynet-tools/lib/app"
 	zapLog "github.com/evrynet-official/evrynet-tools/lib/log"
+	"github.com/evrynet-official/evrynet-tools/lib/node"
 
 	"github.com/urfave/cli"
 )
 
 var (
+	// NumAccountsFlag the number of accounts want to generate
 	NumAccountsFlag = cli.IntFlag{
 		Name:  "num",
 		Usage: "Number of accounts want to generate",
 		Value: 4,
 	}
+	// SeedFlag to generate private key account
 	SeedFlag = cli.StringFlag{
 		Name:  "seed",
 		Usage: "Seed to generate private key account",
 		Value: "evrynet",
 	}
-	isSendTokenFlag = cli.IntFlag{
-		Name:  "issendtoken",
-		Usage: "The flag to send token for accounts or not 1/0",
-		Value: 0,
-	}
-	nodePkFlag = cli.StringFlag{
-		Name:  "nodepk",
+	senderPkFlag = cli.StringFlag{
+		Name:  "senderpk",
 		Usage: "The private key of sender",
 		Value: "ce900e4057ef7253ce737dccf3979ec4e74a19d595e8cc30c6c5ea92dfdd37f1",
 	}
@@ -49,12 +46,12 @@ var (
 
 // NewAccountsFlags return flags to generate accounts
 func NewAccountsFlags() []cli.Flag {
-	return []cli.Flag{NumAccountsFlag, SeedFlag, isSendTokenFlag, nodePkFlag, expectedBalanceFlag}
+	return []cli.Flag{NumAccountsFlag, SeedFlag}
 }
 
 // NewDepositFlags return flags to generate accounts
 func NewDepositFlags() []cli.Flag {
-	return []cli.Flag{NumAccountsFlag, SeedFlag, nodePkFlag, expectedBalanceFlag}
+	return []cli.Flag{NumAccountsFlag, SeedFlag, senderPkFlag, expectedBalanceFlag}
 }
 
 // CreateAccountsAndDeposit will print created accounts & write to accounts.json file and send token to accounts
@@ -74,36 +71,26 @@ func CreateAccountsAndDeposit(ctx *cli.Context) error {
 
 // CreateAccounts will print created accounts & write to accounts.json file
 func CreateAccounts(ctx *cli.Context) error {
-	var (
-		isSendtoken = ctx.Int(isSendTokenFlag.Name)
-	)
 	accounts, err := createAccounts(ctx)
 	if err != nil {
 		return err
 	}
-	if isSendtoken == 1 {
-		err = sendToAccounts(ctx, accounts)
-		if err != nil {
-			return err
-		}
-	}
-
 	writeAccounts(accounts)
 	return nil
 }
 
 func sendToAccounts(ctx *cli.Context, accs []*Account) error {
 	var (
-		nodePk      = ctx.String(nodePkFlag.Name)
-		amount      = ctx.String(expectedBalanceFlag.Name)
-		gasLimit    = big.NewInt(1000000).Uint64()
+		senderPk = ctx.String(senderPkFlag.Name)
+		amount   = ctx.String(expectedBalanceFlag.Name)
+		gasLimit = big.NewInt(1000000).Uint64()
 	)
 	expectedAmount, ok := new(big.Int).SetString(amount, 10)
 	if !ok {
 		fmt.Println("failed to parse expected amount", "amount:", amount)
 		return errors.New("failed to parse expected amount")
 	}
-	err := sendEvr(ctx, accs, nodePk, expectedAmount, gasLimit)
+	err := sendEvr(ctx, accs, senderPk, expectedAmount, gasLimit)
 	if err != nil {
 		fmt.Println("Fail to send token to accounts!", "Err:", err)
 		return err
@@ -113,8 +100,8 @@ func sendToAccounts(ctx *cli.Context, accs []*Account) error {
 
 func createAccounts(ctx *cli.Context) ([]*Account, error) {
 	var (
-		num         = ctx.Int(NumAccountsFlag.Name)
-		seed        = ctx.String(SeedFlag.Name)
+		num  = ctx.Int(NumAccountsFlag.Name)
+		seed = ctx.String(SeedFlag.Name)
 	)
 
 	// generate accounts
@@ -158,8 +145,8 @@ func writeAccounts(accs []*Account) {
 }
 
 // SendEvr will send evr token
-func sendEvr(ctx *cli.Context, accs []*Account, nodePk string, expectedBalance *big.Int, gasLimit uint64) error {
-	pk, err := crypto.HexToECDSA(nodePk)
+func sendEvr(ctx *cli.Context, accs []*Account, senderPk string, expectedBalance *big.Int, gasLimit uint64) error {
+	pk, err := crypto.HexToECDSA(senderPk)
 	if err != nil {
 		return err
 	}
@@ -181,7 +168,7 @@ func sendEvr(ctx *cli.Context, accs []*Account, nodePk string, expectedBalance *
 		return err
 	}
 
-	evrClient, err := app.NewEvrynetClientFromFlags(ctx)
+	evrClient, err := node.NewEvrynetClientFromFlags(ctx)
 	if err != nil {
 		return err
 	}

@@ -63,7 +63,7 @@ func WithSendETHHook(fn func()) Option {
 	}
 }
 
-// WithNumWokers return numWorker to call the balance concurrently
+// WithNumWorkers return numWorker to call the balance concurrently
 func WithNumWorkers(numWorkers int) Option {
 	return func(dp *Depositor) {
 		dp.numWorkers = numWorkers
