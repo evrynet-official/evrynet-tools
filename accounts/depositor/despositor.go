@@ -2,7 +2,6 @@ package depositor
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"math/big"
 	"sync"
@@ -121,10 +120,11 @@ func (dp *Depositor) sendEVR(to common.Address, amount *big.Int) (*types.Receipt
 		switch err {
 		case evrynet.NotFound:
 		case nil:
-			if receipt.Status != types.ReceiptStatusSuccessful {
-				logger.Infow("tx failed", "tx", receipt.TxHash.Hex())
-				return receipt, fmt.Errorf("tx %s failed", receipt.TxHash.Hex())
-			}
+			//This is only applicable for Byzantine forks
+			//if receipt.Status != types.ReceiptStatusSuccessful {
+			//	logger.Infow("tx failed", "tx", receipt.TxHash.Hex())
+			//	return receipt, fmt.Errorf("tx %s failed", receipt.TxHash.Hex())
+			//}
 			logger.Infow("tx success", "tx", receipt.TxHash.Hex())
 			return receipt, nil
 		default:
