@@ -1,4 +1,4 @@
-package accounts
+package main
 
 import (
 	"encoding/json"
@@ -7,45 +7,20 @@ import (
 	"os"
 
 	"github.com/urfave/cli"
+
+	"github.com/evrynet-official/evrynet-tools/accounts"
 )
 
-var (
-	NumAccountsFlag = cli.IntFlag{
-		Name:  "num",
-		Usage: "Number of accounts want to generate",
-		Value: 4,
-	}
-	SeedFlag = cli.StringFlag{
-		Name:  "seed",
-		Usage: "Seed to generate private key account",
-		Value: "evrynet",
-	}
-)
-
-// NewAccountsFlags return flags to generate accounts
-func NewAccountsFlags() []cli.Flag {
-	return []cli.Flag{NumAccountsFlag, SeedFlag}
-}
-
-// CreateAccounts will print created accounts & write to accounts.json file
-func CreateAccounts(ctx *cli.Context) error {
-	var (
-		num  = ctx.Int(NumAccountsFlag.Name)
-		seed = ctx.String(SeedFlag.Name)
-	)
-
-	// generate accounts
-	accs, err := GenerateAccounts(num, seed)
+func generate(ctx *cli.Context) error {
+	accs, err := accounts.GenerateAccountsFromContext(ctx)
 	if err != nil {
-		fmt.Println("Fail to generate new account!", "Err:", err)
 		return err
 	}
-
 	writeAccounts(accs)
 	return nil
 }
 
-func writeAccounts(accs []*Account) {
+func writeAccounts(accs []*accounts.Account) {
 	type account struct {
 		PriKey  string `json:"private_key"`
 		PubKey  string `json:"public_key"`
