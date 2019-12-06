@@ -7,6 +7,8 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/evrynet-official/evrynet-tools/accounts"
+	"github.com/evrynet-official/evrynet-tools/accounts/depositor"
+
 	"github.com/evrynet-official/evrynet-tools/lib/node"
 )
 
@@ -15,30 +17,30 @@ func main() {
 	app.Name = "accounts"
 	app.Usage = "The accounts command line interface"
 	app.Version = "0.0.1"
-	app.Commands = createCommands()
+	app.Commands = accountsCommand()
 
 	if err := app.Run(os.Args); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		_, _ = fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
-func createCommands() []cli.Command {
+func accountsCommand() []cli.Command {
 	createAccountsCmd := cli.Command{
-		Action:      accounts.CreateAccounts,
-		Name:        "create",
-		Usage:       "Create accounts",
+		Action:      generate,
+		Name:        "generate",
+		Usage:       "generate a number accounts based on a seed",
 		Description: `To prepare accounts`,
 	}
 	createAccountsCmd.Flags = accounts.NewAccountsFlags()
 
 	depositCmd := cli.Command{
-		Action:      accounts.CreateAccountsAndDeposit,
+		Action:      deposit,
 		Name:        "deposit",
 		Usage:       "Deposit EVR to the generated accounts",
 		Description: `Deposit EVR to the generated accounts`,
 	}
-	depositCmd.Flags = accounts.NewDepositFlags()
+	depositCmd.Flags = depositor.NewDepositFlags()
 	depositCmd.Flags = append(depositCmd.Flags, node.NewEvrynetNodeFlags()...)
 
 	return []cli.Command{createAccountsCmd, depositCmd}

@@ -1,4 +1,4 @@
-package zap
+package log
 
 import (
 	"github.com/urfave/cli"

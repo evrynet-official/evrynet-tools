@@ -17,6 +17,10 @@ import (
 	"github.com/evrynet-official/evrynet-client/core/types"
 )
 
+var (
+	checkMiningInterval = time.Duration(2 * time.Second)
+)
+
 // ClientInterface
 type ClientInterface interface {
 	NonceAt(background context.Context, addresses common.Address, blockNumber *big.Int) (uint64, error)
@@ -73,12 +77,13 @@ func WithNumWorkers(numWorkers int) Option {
 //NewDepositor returns a depositor
 func NewDepositor(sugar *zap.SugaredLogger, opt *bind.TransactOpts, walletAddrs []common.Address, ethClient ClientInterface, exp *big.Int, opts ...Option) *Depositor {
 	depositor := &Depositor{
-		sugar:           sugar,
-		opt:             opt,
-		walletAddresses: walletAddrs,
-		client:          ethClient,
-		sendEthHook:     func() {},
-		expectBalance:   exp,
+		sugar:               sugar,
+		opt:                 opt,
+		walletAddresses:     walletAddrs,
+		client:              ethClient,
+		sendEthHook:         func() {},
+		expectBalance:       exp,
+		checkMiningInterval: checkMiningInterval,
 	}
 	for _, opt := range opts {
 		opt(depositor)
@@ -115,7 +120,6 @@ func (dp *Depositor) sendEVR(to common.Address, amount *big.Int) (*types.Receipt
 		receipt, err := dp.client.TransactionReceipt(context.Background(), signedTx.Hash())
 		switch err {
 		case evrynet.NotFound:
-			logger.Debugw("tx not found yet, goes to sleep...", "hash", signedTx.Hash())
 		case nil:
 			if receipt.Status != types.ReceiptStatusSuccessful {
 				logger.Infow("tx failed", "tx", receipt.TxHash.Hex())
