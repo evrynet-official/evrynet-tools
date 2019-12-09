@@ -83,8 +83,9 @@ GLOBAL OPTIONS:
    --seed value            Seed to generate private key account (default: "evrynet")
    --num-tx-per-acc value  Number of transactions want to use for an account (default: 1)
    --rpcendpoint value     RPC endpoint to send request (default: "http://0.0.0.0:22001")
+   --flood-mode value      Flood mode when send Tx: 0: Random, 1: Normal Tx, 2: Tx with SC (default: 0)
    --help, -h              show help
    --version, -v           print the version
 ```  
 To use tx flood you can use this command  
-`./build/tx_flood --num 3 --num-tx-per-acc 2 --seed testnet --rpcendpoint "http://0.0.0.0:22001"`
+`./build/tx_flood --num 3 --num-tx-per-acc 2 --seed testnet --rpcendpoint "http://0.0.0.0:22001" --flood-mode 2`
