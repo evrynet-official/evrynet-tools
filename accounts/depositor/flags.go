@@ -54,7 +54,6 @@ func NewDepositorFromFlag(ctx *cli.Context, logger *zap.SugaredLogger) (*Deposit
 	}
 
 	pk, err := crypto.HexToECDSA(senderPk)
-
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +80,8 @@ func NewDepositorFromFlag(ctx *cli.Context, logger *zap.SugaredLogger) (*Deposit
 	if err != nil {
 		return nil, err
 	}
-	dep := NewDepositor(logger, opt, wAddrs, evrClient, expectedAmount,
+
+	dep := NewDepositor(logger, opt, crypto.PubkeyToAddress(pk.PublicKey), wAddrs, evrClient, expectedAmount,
 		WithGasLimit(gasLimit), WithNumWorkers(nworker),
 	)
 	return dep, nil
