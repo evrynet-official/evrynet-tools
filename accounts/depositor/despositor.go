@@ -22,6 +22,7 @@ var (
 
 // ClientInterface
 type ClientInterface interface {
+	PendingNonceAt(ctx context.Context, account common.Address) (uint64, error)
 	NonceAt(background context.Context, addresses common.Address, blockNumber *big.Int) (uint64, error)
 	SuggestGasPrice(background context.Context) (*big.Int, error)
 	SendTransaction(background context.Context, transaction *types.Transaction) error
@@ -33,6 +34,7 @@ type ClientInterface interface {
 type Depositor struct {
 	sugar               *zap.SugaredLogger
 	opt                 *bind.TransactOpts
+	address             common.Address
 	walletAddresses     []common.Address
 	client              ClientInterface
 	gasLimit            uint64
@@ -74,10 +76,11 @@ func WithNumWorkers(numWorkers int) Option {
 }
 
 //NewDepositor returns a depositor
-func NewDepositor(sugar *zap.SugaredLogger, opt *bind.TransactOpts, walletAddrs []common.Address, ethClient ClientInterface, exp *big.Int, opts ...Option) *Depositor {
+func NewDepositor(sugar *zap.SugaredLogger, opt *bind.TransactOpts, address common.Address, walletAddrs []common.Address, ethClient ClientInterface, exp *big.Int, opts ...Option) *Depositor {
 	depositor := &Depositor{
 		sugar:               sugar,
 		opt:                 opt,
+		address:             address,
 		walletAddresses:     walletAddrs,
 		client:              ethClient,
 		sendEthHook:         func() {},
@@ -91,32 +94,31 @@ func NewDepositor(sugar *zap.SugaredLogger, opt *bind.TransactOpts, walletAddrs 
 }
 
 //sendEVR will send and wait for transaction receipt before returning
-func (dp *Depositor) sendEVR(to common.Address, amount *big.Int) (*types.Receipt, error) {
+func (dp *Depositor) sendEVR(to common.Address, amount *big.Int, nonce uint64) (common.Hash, error) {
 	var (
 		logger = dp.sugar.With("func", "sendEVR", "wallet_addr", to.Hex(), "amount", amount)
 	)
-	nonce, err := dp.client.NonceAt(context.Background(), dp.opt.From, nil)
-	if err != nil {
-		return nil, err
-	}
+	logger.Infow("sending evr...", "nonce", nonce)
 	gasPrice, err := dp.client.SuggestGasPrice(context.Background())
 	if err != nil {
-		return nil, err
+		return common.Hash{}, err
 	}
 	tx := types.NewTransaction(nonce, to, amount, dp.gasLimit, gasPrice, nil)
 	signedTx, err := dp.opt.Signer(types.HomesteadSigner{}, dp.opt.From, tx)
 	if err != nil {
-		return nil, err
+		return common.Hash{}, err
 	}
 
 	if err = dp.client.SendTransaction(context.Background(), signedTx); err != nil {
-		return nil, err
+		return common.Hash{}, err
 	}
-
 	dp.sendEthHook()
+	return signedTx.Hash(), nil
+}
 
+func (dp *Depositor) waitForTx(hash common.Hash) (*types.Receipt, error) {
 	for {
-		receipt, err := dp.client.TransactionReceipt(context.Background(), signedTx.Hash())
+		receipt, err := dp.client.TransactionReceipt(context.Background(), hash)
 		switch err {
 		case evrynet.NotFound:
 		case nil:
@@ -125,7 +127,6 @@ func (dp *Depositor) sendEVR(to common.Address, amount *big.Int) (*types.Receipt
 			//	logger.Infow("tx failed", "tx", receipt.TxHash.Hex())
 			//	return receipt, fmt.Errorf("tx %s failed", receipt.TxHash.Hex())
 			//}
-			logger.Infow("tx success", "tx", receipt.TxHash.Hex())
 			return receipt, nil
 		default:
 			return receipt, err
@@ -168,7 +169,21 @@ func (dp *Depositor) CheckAndDeposit() error {
 	if err := gr.Wait(); err != nil {
 		return err
 	}
-	//The deposit is done sequentially for now. Might do parallel in the future
+
+	return dp.Deposit(balances)
+}
+
+func (dp *Depositor) Deposit(balances map[common.Address]*big.Int) error {
+	var (
+		logger = dp.sugar.With("func", "CheckAndDeposit")
+		gr     = errgroup.Group{}
+	)
+
+	nonce, err := dp.client.PendingNonceAt(context.Background(), dp.address)
+	if err != nil {
+		return err
+	}
+	logger.Info("get nonce successfully", "current_nonce", nonce)
 	for addr, bal := range balances {
 		logger := logger.With(
 			"address", addr.Hex(),
@@ -177,15 +192,27 @@ func (dp *Depositor) CheckAndDeposit() error {
 		)
 		if bal.Cmp(dp.expectBalance) < 0 {
 			diff := big.NewInt(0).Sub(dp.expectBalance, bal)
-			logger.Infow("wallet balance is insufficient, depositing funds from bank", "deposit_amount", diff.String())
-			tx, err := dp.sendEVR(addr, diff)
+			logger.Infow("wallet balance is insufficient, depositing funds from bank", "deposit_amount", diff.String(), "nonce", nonce)
+			txHash, err := dp.sendEVR(addr, diff, nonce)
 			if err != nil {
+				logger.Error("failed to deposit", "error", err)
 				return err
 			}
-			logger.Infow("deposited funds to wallet account", "tx", tx.TxHash.Hex())
-		} else {
-			logger.Infow("wallet balance is sufficient")
+			nonce++
+			gr.Go(func() error {
+				_, wErr := dp.waitForTx(txHash)
+				if wErr != nil {
+					logger.Error("failed to deposit", "error", wErr)
+					return wErr
+				}
+				logger.Infow("deposited funds to wallet account", "tx", txHash.Hex())
+				return nil
+			})
+
 		}
+	}
+	if err := gr.Wait(); err != nil {
+		return err
 	}
 	return nil
 }
