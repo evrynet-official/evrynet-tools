@@ -23,7 +23,6 @@ var (
 // ClientInterface
 type ClientInterface interface {
 	PendingNonceAt(ctx context.Context, account common.Address) (uint64, error)
-	NonceAt(background context.Context, addresses common.Address, blockNumber *big.Int) (uint64, error)
 	SuggestGasPrice(background context.Context) (*big.Int, error)
 	SendTransaction(background context.Context, transaction *types.Transaction) error
 	TransactionReceipt(background context.Context, hash common.Hash) (*types.Receipt, error)
@@ -173,9 +172,10 @@ func (dp *Depositor) CheckAndDeposit() error {
 	return dp.Deposit(balances)
 }
 
+// Deposit deposit to array of addresses
 func (dp *Depositor) Deposit(balances map[common.Address]*big.Int) error {
 	var (
-		logger = dp.sugar.With("func", "CheckAndDeposit")
+		logger = dp.sugar.With("func", "Deposit")
 		gr     = errgroup.Group{}
 	)
 
@@ -183,7 +183,7 @@ func (dp *Depositor) Deposit(balances map[common.Address]*big.Int) error {
 	if err != nil {
 		return err
 	}
-	logger.Info("get nonce successfully", "current_nonce", nonce)
+	logger.Infow("get nonce successfully", "current_nonce", nonce)
 	for addr, bal := range balances {
 		logger := logger.With(
 			"address", addr.Hex(),
