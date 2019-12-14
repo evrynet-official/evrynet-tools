@@ -6,28 +6,31 @@
 * Go 1.12+
 ```shell script
 $ make accounts
-$ ./build/accounts/accounts -help
-
+$ ./build/accounts -help
 NAME:
-   accounts - The account-tools command line interface
+   accounts - The accounts command line interface
 
 USAGE:
    accounts [global options] command [command options] [arguments...]
 
+VERSION:
+   0.0.1
+
 COMMANDS:
-   create   Create accounts
-   deposit  Deposit EVR to the generated accounts
-   help, h  Shows a list of commands or help for one command
+   generate  generate a number accounts based on a seed
+   deposit   Deposit EVR to the generated accounts
+   help, h   Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
-   --help, -h  show help
+   --help, -h     show help
+   --version, -v  print the version
 ```
 
 To generate accounts you can use this command  
-`./build/accounts/accounts create --num 5 --seed testnet`
+`./build/accounts generate --num 5 --seed testnet`
 
 To deposit to accounts you can use this command  
-`./build/accounts/accounts deposit --num 10 --seed testnet --expectedbalance "1000000000000000000" --senderpk "ce900e4057ef7253ce737dccf3979ec4e74a19d595e8cc30c6c5ea92dfdd37f1" --rpcendpoint "http://0.0.0.0:22001"`
+`./build/accounts deposit --num 10 --seed testnet --expectedbalance "1000000000000000000" --senderpk "ce900e4057ef7253ce737dccf3979ec4e74a19d595e8cc30c6c5ea92dfdd37f1" --rpcendpoint "http://0.0.0.0:22001"`
 
 <details>
 <summary>Output</summary> 
@@ -89,3 +92,29 @@ GLOBAL OPTIONS:
 ```  
 To use tx flood you can use this command  
 `./build/tx_flood --num 3 --num-tx-per-acc 2 --seed testnet --rpcendpoint "http://0.0.0.0:22001" --flood-mode 2`
+
+## Build transactions metric command line interface  
+```shell script
+$ make tx_metric
+$ ./build/tx_metric -h
+NAME:
+   tx_metric - The tx_metric command line interface
+
+USAGE:
+   tx_metric [global options] command [command options] [arguments...]
+
+VERSION:
+   0.0.1
+
+COMMANDS:
+   help, h  Shows a list of commands or help for one command
+
+GLOBAL OPTIONS:
+   --rpcendpoint value  RPC endpoint to send request (default: "http://0.0.0.0:22001")
+   --start-block value  Where blocknumber start at (default: 0)
+   --duration value     Duration to calculate metric (default: 1m0s)
+   --help, -h           show help
+   --version, -v        print the version
+```  
+To use tx metric you can use this command  
+`./build/tx_metric --rpcendpoint "http://0.0.0.0:22001" --start-block 1681 --duration 60s`

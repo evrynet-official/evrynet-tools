@@ -1,4 +1,4 @@
-.PHONY: accounts tx_flood
+.PHONY: accounts tx_flood tx_metric
 
 accounts:
 	go build -v -o ./build/accounts ./cmd/accounts
@@ -9,3 +9,8 @@ tx_flood:
 	go build -v -o ./build/tx_flood ./cmd/tx_flood
 	@echo "Done building."
 	@echo "Run \"./build/tx_flood\" to launch transactions manager."
+
+tx_metric:
+	go build -v -o ./build/tx_metric ./cmd/tx_metric
+	@echo "Done building."
+	@echo "Run \"./build/tx_metric\" to launch transactions metric."
