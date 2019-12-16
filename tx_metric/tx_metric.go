@@ -12,7 +12,7 @@ import (
 )
 
 type TxMetric struct {
-	StartBlockNumber int
+	StartBlockNumber int64
 	StartTime        uint64
 	StopTime         uint64
 	Duration         time.Duration
@@ -23,7 +23,7 @@ func (tm *TxMetric) Start() error {
 	// Update StartBlockNumber & StartTime if reaching a block exists transactions
 	fmt.Println("--- Finding block has Tx ...")
 	for ; ; tm.StartBlockNumber++ {
-		bl, err := tm.EvrClient.BlockByNumber(context.Background(), big.NewInt(int64(tm.StartBlockNumber)))
+		bl, err := tm.EvrClient.BlockByNumber(context.Background(), big.NewInt(tm.StartBlockNumber))
 		if err != nil {
 			return err
 		}
@@ -38,13 +38,13 @@ func (tm *TxMetric) Start() error {
 
 	var (
 		totalTx              = 0
-		totalBlock           = 0
+		totalBlock           int64
 		numberOfBlockHasNoTx = 0
 	)
 	// Scan every block to sum Tx
 	fmt.Println("--- Starting calculate TPS ...")
 	for i := tm.StartBlockNumber; ; i++ {
-		bl, err := tm.EvrClient.BlockByNumber(context.Background(), big.NewInt(int64(i)))
+		bl, err := tm.EvrClient.BlockByNumber(context.Background(), big.NewInt(i))
 		if bl == nil || err != nil {
 			return errors.Errorf("Can not get blocknumber %d. Error: %s", i, err)
 		}
