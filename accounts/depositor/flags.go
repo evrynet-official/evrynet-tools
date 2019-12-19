@@ -31,11 +31,16 @@ var (
 		Usage: "The number of worker for the program",
 		Value: 1,
 	}
+	numberOfCoreFlag = cli.IntFlag{
+		Name:  "ncore",
+		Usage: "The number of core account from which txs will be sent in parallel to others accounts for the program",
+		Value: 100,
+	}
 )
 
 // NewDepositFlags return flags to create a depositor
 func NewDepositFlags() []cli.Flag {
-	return []cli.Flag{accounts.NumAccountsFlag, accounts.SeedFlag, senderPkFlag, expectedBalanceFlag, numberOfWorkerFlag}
+	return []cli.Flag{accounts.NumAccountsFlag, accounts.SeedFlag, senderPkFlag, expectedBalanceFlag, numberOfWorkerFlag, numberOfCoreFlag}
 }
 
 // NewDepositFlags return a ready-to-use depositor from cli
@@ -45,6 +50,7 @@ func NewDepositorFromFlag(ctx *cli.Context, logger *zap.SugaredLogger) (*Deposit
 		amount   = ctx.String(expectedBalanceFlag.Name)
 		gasLimit = big.NewInt(1000000).Uint64()
 		nworker  = ctx.Int(numberOfWorkerFlag.Name)
+		nCore    = ctx.Int(numberOfCoreFlag.Name)
 	)
 
 	expectedAmount, ok := new(big.Int).SetString(amount, 10)
@@ -64,13 +70,8 @@ func NewDepositorFromFlag(ctx *cli.Context, logger *zap.SugaredLogger) (*Deposit
 	}
 
 	var (
-		wAddrs []common.Address
-		opt    = bind.NewKeyedTransactor(pk)
+		opt = bind.NewKeyedTransactor(pk)
 	)
-
-	for i := 0; i < len(accs); i++ {
-		wAddrs = append(wAddrs, accs[i].Address)
-	}
 
 	opt.Signer = func(signer types.Signer, from common.Address, tx *types.Transaction) (*types.Transaction, error) {
 		return types.SignTx(tx, signer, pk)
@@ -81,7 +82,7 @@ func NewDepositorFromFlag(ctx *cli.Context, logger *zap.SugaredLogger) (*Deposit
 		return nil, err
 	}
 
-	dep := NewDepositor(logger, opt, crypto.PubkeyToAddress(pk.PublicKey), wAddrs, evrClient, expectedAmount,
+	dep := NewDepositor(logger, opt, crypto.PubkeyToAddress(pk.PublicKey), accs, evrClient, expectedAmount, nCore,
 		WithGasLimit(gasLimit), WithNumWorkers(nworker),
 	)
 	return dep, nil
