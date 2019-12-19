@@ -21,12 +21,14 @@ import (
 )
 
 type TxFlood struct {
-	NumAcc      int
-	NumTxPerAcc int
-	Seed        string
-	FloodMode   FloodMode
-	EvrClient   *ethclient.Client
-	Accounts    []*accounts.Account
+	NumAcc          int
+	NumTxPerAcc     int
+	Seed            string
+	FloodMode       FloodMode
+	Nonstop         bool
+	NonstopDuration time.Duration
+	EvrClient       *ethclient.Client
+	Accounts        []*accounts.Account
 }
 
 type FloodMode int
@@ -61,6 +63,7 @@ func (tf *TxFlood) Start() error {
 		}
 	}
 
+startFlood:
 	// Start sending tx flood
 	var wg sync.WaitGroup
 	for _, acc := range tf.Accounts {
@@ -85,8 +88,13 @@ func (tf *TxFlood) Start() error {
 	}
 
 	go handleTxErr(errChan)
-
 	wg.Wait()
+
+	if tf.Nonstop {
+		fmt.Println("Waiting to flood new round...")
+		time.Sleep(tf.NonstopDuration)
+		goto startFlood
+	}
 	close(errChan)
 
 	if success {
