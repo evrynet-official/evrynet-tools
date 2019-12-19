@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"reflect"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/pkg/errors"
@@ -16,17 +17,20 @@ import (
 	"github.com/evrynet-official/evrynet-client/common/hexutil"
 	"github.com/evrynet-official/evrynet-client/core/types"
 	"github.com/evrynet-official/evrynet-client/ethclient"
+	"github.com/evrynet-official/evrynet-client/params"
 
 	"github.com/evrynet-official/evrynet-tools/accounts"
 )
 
 type TxFlood struct {
-	NumAcc      int
-	NumTxPerAcc int
-	Seed        string
-	FloodMode   FloodMode
-	EvrClient   *ethclient.Client
-	Accounts    []*accounts.Account
+	NumAcc        int
+	NumTxPerAcc   int
+	Seed          string
+	FloodMode     FloodMode
+	EvrClient     *ethclient.Client
+	Accounts      []*accounts.Account
+	Continuous    bool
+	SleepInterval time.Duration
 }
 
 type FloodMode int
@@ -35,6 +39,10 @@ const (
 	DefaultMode FloodMode = iota
 	NormalTxMode
 	SmartContractMode
+)
+
+var (
+	gasPrice = big.NewInt(params.GasPriceConfig)
 )
 
 func handleTxErr(errCh chan error) {
@@ -48,7 +56,7 @@ func handleTxErr(errCh chan error) {
 func (tf *TxFlood) Start() error {
 	var (
 		errChan      = make(chan error)
-		success      = true
+		failed       uint64
 		contractAddr = &common.Address{}
 	)
 
@@ -69,17 +77,25 @@ func (tf *TxFlood) Start() error {
 			defer wg.Done()
 			nonce, err := tf.EvrClient.PendingNonceAt(context.Background(), acc.Address)
 			if err != nil {
-				success = false
+				atomic.AddUint64(&failed, uint64(tf.NumTxPerAcc))
 				errChan <- err
+				return
 			}
 
 			manualNonce := big.NewInt(int64(nonce))
-			for n := 0; n < tf.NumTxPerAcc; n++ {
-				err := tf.sendTx(acc, manualNonce, contractAddr)
-				if err != nil {
-					success = false
-					errChan <- err
+			for {
+				for n := 0; n < tf.NumTxPerAcc; n++ {
+					err := tf.sendTx(acc, manualNonce, contractAddr)
+					if err != nil {
+						atomic.AddUint64(&failed, uint64(1))
+						errChan <- err
+
+					}
 				}
+				if !tf.Continuous {
+					break
+				}
+				time.Sleep(tf.SleepInterval)
 			}
 		}(acc, contractAddr)
 	}
@@ -89,11 +105,11 @@ func (tf *TxFlood) Start() error {
 	wg.Wait()
 	close(errChan)
 
-	if success {
+	if failed == 0 {
 		return nil
 	}
 
-	return errors.New("fail to send some transactions")
+	return fmt.Errorf("fail to send %d transactions", failed)
 }
 
 func (tf *TxFlood) sendTx(acc *accounts.Account, nonce *big.Int, contractAddr *common.Address) error {
@@ -131,25 +147,12 @@ func (tf *TxFlood) sendTx(acc *accounts.Account, nonce *big.Int, contractAddr *c
 
 func (tf *TxFlood) sendNormalTx(acc *accounts.Account, nonce *big.Int) error {
 	randAcc := tf.Accounts[rand.Intn(len(tf.Accounts))]
+	var (
+		estGas uint64 = 30000
+		err    error
+	)
 	if !reflect.DeepEqual(acc.Address, randAcc.Address) {
 		amount := big.NewInt(rand.Int63n(10) + 1) // Send at least 1 EVR
-
-		gasPrice, err := tf.EvrClient.SuggestGasPrice(context.Background())
-		if err != nil {
-			return err
-		}
-
-		msg := evrynet.CallMsg{
-			From:  acc.Address,
-			To:    &randAcc.Address,
-			Value: amount,
-			Data:  []byte{},
-		}
-		estGas, err := tf.EvrClient.EstimateGas(context.Background(), msg)
-		if err != nil {
-			return err
-		}
-
 		transaction := types.NewTransaction(nonce.Uint64(), randAcc.Address, amount, estGas, gasPrice, nil)
 		transaction, err = types.SignTx(transaction, types.HomesteadSigner{}, acc.PriKey)
 		if err != nil {
@@ -158,10 +161,11 @@ func (tf *TxFlood) sendNormalTx(acc *accounts.Account, nonce *big.Int) error {
 
 		err = tf.EvrClient.SendTransaction(context.Background(), transaction)
 		if err != nil {
-			return errors.Wrapf(err, "failed to send %d EVR from %s", amount, acc.Address.Hex())
+			return errors.Wrapf(err, "failed to send %d EVR from %s nonce %s", amount, acc.Address.Hex(), nonce.String())
 		}
+		fmt.Printf("Sent %d EVR from %s => %s nonce %s \n", amount, acc.Address.Hex(), randAcc.Address.Hex(), nonce.String())
 		nonce = nonce.Add(nonce, common.Big1)
-		fmt.Printf("Sent %d EVR from %s => %s\n", amount, acc.Address.Hex(), randAcc.Address.Hex())
+
 	}
 	return nil
 }
@@ -169,30 +173,19 @@ func (tf *TxFlood) sendNormalTx(acc *accounts.Account, nonce *big.Int) error {
 func (tf *TxFlood) sendSmartContractTx(acc *accounts.Account, nonce *big.Int, contractAddr *common.Address) error {
 	randAcc := tf.Accounts[rand.Intn(len(tf.Accounts))]
 	if !reflect.DeepEqual(acc.Address, randAcc.Address) {
-		gasPrice, err := tf.EvrClient.SuggestGasPrice(context.Background())
-		if err != nil {
-			return err
-		}
 
+		var (
+			estGas uint64 = 40000
+			err    error
+		)
 		// data to interact with a function of this contract
 		dataBytes := []byte("0x3fb5c1cb0000000000000000000000000000000000000000000000000000000000000002")
-		msg := evrynet.CallMsg{
-			From:  acc.Address,
-			To:    &randAcc.Address,
-			Value: common.Big0,
-			Data:  dataBytes,
-		}
-		estGas, err := tf.EvrClient.EstimateGas(context.Background(), msg)
-		if err != nil {
-			return err
-		}
-
 		tx := types.NewTransaction(nonce.Uint64(), *contractAddr, big.NewInt(0), estGas, gasPrice, dataBytes)
 		tx, err = types.SignTx(tx, types.HomesteadSigner{}, acc.PriKey)
 
 		err = tf.EvrClient.SendTransaction(context.Background(), tx)
 		if err != nil {
-			return errors.Wrapf(err, "failed to send Tx to SC %s from %s", contractAddr.Hex(), acc.Address.Hex())
+			return errors.Wrapf(err, "failed to send Tx to SC %s from %s nonce %s", contractAddr.Hex(), acc.Address.Hex(), nonce.String())
 		}
 		nonce = nonce.Add(nonce, common.Big1)
 		fmt.Printf("Sent Tx from %s => SC %s\n", acc.Address.Hex(), contractAddr.Hex())
@@ -214,11 +207,6 @@ func (tf *TxFlood) prepareNewContract() (*common.Address, error) {
 		return nil, err
 	}
 
-	gasPrice, err := tf.EvrClient.SuggestGasPrice(context.Background())
-	if err != nil {
-		return nil, err
-	}
-
 	msg := evrynet.CallMsg{
 		From:  acc.Address,
 		To:    nil,
@@ -229,7 +217,6 @@ func (tf *TxFlood) prepareNewContract() (*common.Address, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	tx := types.NewContractCreation(nonce, big.NewInt(0), estGas, gasPrice, payLoadBytes)
 	tx, err = types.SignTx(tx, types.HomesteadSigner{}, acc.PriKey)
 

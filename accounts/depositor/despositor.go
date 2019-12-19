@@ -34,7 +34,6 @@ const (
 // ClientInterface
 type ClientInterface interface {
 	PendingNonceAt(ctx context.Context, account common.Address) (uint64, error)
-	NonceAt(background context.Context, addresses common.Address, blockNumber *big.Int) (uint64, error)
 	SuggestGasPrice(background context.Context) (*big.Int, error)
 	SendTransaction(background context.Context, transaction *types.Transaction) error
 	TransactionReceipt(background context.Context, hash common.Hash) (*types.Receipt, error)
@@ -306,7 +305,7 @@ func (dp *Depositor) DepositCoreAccounts() error {
 	if err != nil {
 		return err
 	}
-	logger.Info("get nonce successfully", "current_nonce", nonce)
+	logger.Infow("get nonce successfully", "current_nonce", nonce)
 	txsCost := big.NewInt(1).Mul(big.NewInt(int64(estGas)), gasPrice)
 	diff := big.NewInt(1).Mul(big.NewInt(1).Add(dp.expectBalance, txsCost), big.NewInt(int64((len(dp.walletAddresses)-dp.nCoreAccount)/dp.nCoreAccount+1)))
 

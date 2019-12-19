@@ -85,8 +85,10 @@ GLOBAL OPTIONS:
    --num value             Number of accounts want to generate (default: 4)
    --seed value            Seed to generate private key account (default: "evrynet")
    --num-tx-per-acc value  Number of transactions want to use for an account (default: 1)
-   --rpcendpoint value     RPC endpoint to send request (default: "http://0.0.0.0:22001")
    --flood-mode value      Flood mode when send Tx: 0: Random, 1: Normal Tx, 2: Tx with SC (default: 0)
+   --continous             Flood continously if set to true
+   --sleep-duration value  Time to sleep after each batch of numAccount*numTxPerAcc flooding (default: 1s)
+   --rpcendpoint value     RPC endpoint to send request (default: "http://0.0.0.0:22001")
    --help, -h              show help
    --version, -v           print the version
 ```  
