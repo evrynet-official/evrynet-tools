@@ -9,16 +9,15 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/evrynet-official/evrynet-client/params"
-	"github.com/pkg/errors"
-
-	"go.uber.org/zap"
-	"golang.org/x/sync/errgroup"
-
 	"github.com/evrynet-official/evrynet-client"
 	"github.com/evrynet-official/evrynet-client/accounts/abi/bind"
 	"github.com/evrynet-official/evrynet-client/common"
 	"github.com/evrynet-official/evrynet-client/core/types"
+	"github.com/evrynet-official/evrynet-client/params"
+	"github.com/pkg/errors"
+	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/evrynet-official/evrynet-tools/accounts"
 )
 
