@@ -65,7 +65,6 @@ To deposit to accounts you can use this command
 ```shell script
 $ make tx_flood
 $ ./build/tx_flood -h
-
 NAME:
    tx_flood - The tx_flood command line interface
 
@@ -79,13 +78,16 @@ COMMANDS:
    help, h  Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
-   --num value             Number of accounts want to generate (default: 4)
-   --seed value            Seed to generate private key account (default: "evrynet")
-   --num-tx-per-acc value  Number of transactions want to use for an account (default: 1)
-   --rpcendpoint value     RPC endpoint to send request (default: "http://0.0.0.0:22001")
-   --flood-mode value      Flood mode when send Tx: 0: Random, 1: Normal Tx, 2: Tx with SC (default: 0)
-   --help, -h              show help
-   --version, -v           print the version
+   --num value               Number of accounts want to generate (default: 4)
+   --seed value              Seed to generate private key account (default: "evrynet")
+   --rpcendpoint value       RPC endpoint to send request (default: "http://0.0.0.0:22001")
+   --num-tx-per-acc value    Number of transactions want to use for an account (default: 1)
+   --flood-mode value        Flood mode when send Tx: 0: Random, 1: Normal Tx, 2: Tx with SC (default: 0)
+   --nonstop                 To enable flood tx continuously
+   --nonstop-duration value  Time to start new flood (default: 1s)
+   --help, -h                show help
+   --version, -v             print the version
+
 ```  
 To use tx flood you can use this command  
 `./build/tx_flood --num 3 --num-tx-per-acc 2 --seed testnet --rpcendpoint "http://0.0.0.0:22001" --flood-mode 2`

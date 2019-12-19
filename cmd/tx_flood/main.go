@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/evrynet-official/evrynet-tools/accounts"
-	"github.com/evrynet-official/evrynet-tools/tx_flood"
 	"github.com/urfave/cli"
+
+	"github.com/evrynet-official/evrynet-tools/accounts"
+	"github.com/evrynet-official/evrynet-tools/lib/node"
+	"github.com/evrynet-official/evrynet-tools/tx_flood"
 )
 
 func main() {
@@ -15,6 +17,7 @@ func main() {
 	app.Usage = "The tx_flood command line interface"
 	app.Version = "0.0.1"
 	app.Flags = append(app.Flags, accounts.NewAccountsFlags()...)
+	app.Flags = append(app.Flags, node.NewEvrynetNodeFlags()...)
 	app.Flags = append(app.Flags, tx_flood.NewTxFloodFlags()...)
 	app.Action = run
 
