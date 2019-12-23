@@ -3,6 +3,7 @@ package tx_metric
 import (
 	"context"
 	"fmt"
+	"math"
 	"math/big"
 	"time"
 
@@ -37,10 +38,17 @@ func (tm *TxMetric) Start() error {
 	}
 
 	var (
-		totalTx              = 0
-		totalBlock           int64
-		numberOfBlockHasNoTx = 0
+		totalTx                 = 0
+		totalBlock              int64
+		numberOfBlockHasNoTx    = 0
+		calculateEachMinuteFlag bool
+		minuteStats             = make([]int, int(math.Floor(float64(tm.StopTime-tm.StartTime)/60.0))+1)
 	)
+
+	if tm.Duration.Minutes() > 1 {
+		calculateEachMinuteFlag = true
+	}
+
 	// Scan every block to sum Tx
 	fmt.Println("--- Starting calculate TPS ...")
 	for i := tm.StartBlockNumber; ; i++ {
@@ -51,7 +59,12 @@ func (tm *TxMetric) Start() error {
 
 		if bl.Time() <= tm.StopTime {
 			fmt.Printf("Found blocknumber %d | Txs: %d\n", i, bl.Transactions().Len())
-			totalTx += bl.Transactions().Len()
+			numberOfTx := bl.Transactions().Len()
+			if calculateEachMinuteFlag {
+				minuteStats[int(math.Floor(float64(bl.Time()-tm.StartTime)/60.0))] += numberOfTx
+			}
+
+			totalTx += numberOfTx
 			totalBlock = i - tm.StartBlockNumber + 1
 			if bl.Transactions().Len() == 0 {
 				numberOfBlockHasNoTx++
@@ -61,12 +74,20 @@ func (tm *TxMetric) Start() error {
 		}
 	}
 
-	fmt.Println("------------------------------")
+	fmt.Println("-----------General Stats----------------")
 	fmt.Println("Duration:", tm.Duration.Seconds(), "s")
 	fmt.Println("Total Tx:", totalTx)
 	fmt.Println("Total Blocks:", totalBlock)
 	fmt.Println("Total Blocks have 0 Tx:", numberOfBlockHasNoTx)
 	fmt.Println("=> AVG Txs/Block:", float64(totalTx)/float64(totalBlock))
 	fmt.Println("=> TPS:", float64(totalTx)/tm.Duration.Seconds())
+
+	// Calculate stats for each minute
+	if tm.Duration.Minutes() > 1 {
+		fmt.Println("-----------Detail stats for each minute----------------")
+		for index, txs := range minuteStats {
+			fmt.Println("Txs at minute", index+1, ":", txs)
+		}
+	}
 	return nil
 }

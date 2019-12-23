@@ -30,7 +30,7 @@ func NewTxMetricFlags() []cli.Flag {
 // NewTxMetricFromFlags will init metric flags
 func NewTxMetricFromFlags(ctx *cli.Context) (tm *TxMetric, err error) {
 	tm = &TxMetric{
-		StartBlockNumber: ctx.Int(startBlockNumber),
+		StartBlockNumber: ctx.Int64(startBlockNumber),
 		Duration:         ctx.Duration(duration),
 	}
 
