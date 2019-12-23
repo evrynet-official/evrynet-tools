@@ -3,7 +3,6 @@ package tx_metric
 import (
 	"context"
 	"fmt"
-	"math"
 	"math/big"
 	"time"
 
@@ -41,13 +40,9 @@ func (tm *TxMetric) Start() error {
 		totalTx                 = 0
 		totalBlock              int64
 		numberOfBlockHasNoTx    = 0
-		calculateEachMinuteFlag bool
-		minuteStats             = make([]int, int(math.Floor(float64(tm.StopTime-tm.StartTime)/60.0))+1)
+		calculateEachMinuteFlag = tm.Duration.Minutes() > 1
+		minuteStats             = make([]int, int(tm.StopTime-tm.StartTime)/60+1)
 	)
-
-	if tm.Duration.Minutes() > 1 {
-		calculateEachMinuteFlag = true
-	}
 
 	// Scan every block to sum Tx
 	fmt.Println("--- Starting calculate TPS ...")
@@ -61,7 +56,7 @@ func (tm *TxMetric) Start() error {
 			fmt.Printf("Found blocknumber %d | Txs: %d\n", i, bl.Transactions().Len())
 			numberOfTx := bl.Transactions().Len()
 			if calculateEachMinuteFlag {
-				minuteStats[int(math.Floor(float64(bl.Time()-tm.StartTime)/60.0))] += numberOfTx
+				minuteStats[int(bl.Time()-tm.StartTime)/60] += numberOfTx
 			}
 
 			totalTx += numberOfTx
@@ -86,7 +81,7 @@ func (tm *TxMetric) Start() error {
 	if tm.Duration.Minutes() > 1 {
 		fmt.Println("-----------Detail stats for each minute----------------")
 		for index, txs := range minuteStats {
-			fmt.Println("Txs at minute", index+1, ":", txs)
+			fmt.Printf("Txs at minute %d: %d\n", index+1, txs)
 		}
 	}
 	return nil
