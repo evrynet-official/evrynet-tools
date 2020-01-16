@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"math/big"
 	"time"
 
 	"github.com/urfave/cli"
@@ -44,22 +45,34 @@ func blcMonitor(ctx *cli.Context) {
 	}
 }
 
+func (client *Client) isBlockChanged(lastBlock *big.Int) bool {
+	if lastBlock == nil || lastBlock.Cmp(client.BlcClient.LatestBlock) <= 0 {
+		return false
+	}
+	return true
+}
+
 func (client *Client) checkNodeAlive() {
-	lastBlock, err := client.BlcClient.GetLastBlock()
-	if err != nil {
-		sendAlert(client, err.Error(), "SOS", false)
-		return
+	var (
+		blockChanged = false
+		lastBlock    *big.Int
+		err          error
+	)
+
+	// re-try max-times times if can get latest block, may be this reason is the system is loading
+	for i := 0; i < MaxTimes; i++ {
+		lastBlock, err = client.BlcClient.GetLastBlock()
+		if err != nil {
+			log.Printf("get latest block: %s at %d times", err.Error(), i+1)
+		}
+		blockChanged = client.isBlockChanged(lastBlock)
+		if blockChanged {
+			break
+		}
+		time.Sleep(3 * time.Second)
 	}
 
-	if lastBlock == nil {
-		// send alert
-		sendAlert(client,
-			fmt.Sprintf("[%s] Block is stuck, latest block: %d", time.Now().Format(time.RFC3339), client.BlcClient.LatestBlock),
-			"SOS", false)
-		client.SendCount++
-		return
-	}
-	if lastBlock.Cmp(client.BlcClient.LatestBlock) <= 0 {
+	if !blockChanged {
 		// send alert
 		sendAlert(client,
 			fmt.Sprintf("[%s] Block is stuck, latest block: %d", time.Now().Format(time.RFC3339), client.BlcClient.LatestBlock),

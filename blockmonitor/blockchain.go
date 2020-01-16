@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	timeTickerFlag = cli.IntFlag{
+	timeTickerFlag = cli.DurationFlag{
 		Name:  "duration",
 		Usage: "The duration delay for each times to checks the situation of block (seconds)",
 		Value: 60,
