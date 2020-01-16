@@ -4,6 +4,7 @@ go 1.12
 
 require (
 	github.com/Evrynetlabs/evrynet-node v0.0.0-20200120040119-3a68f14c13f4
+	github.com/go-telegram-bot-api/telegram-bot-api v4.6.4+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.4.0
 	github.com/urfave/cli v1.22.1
