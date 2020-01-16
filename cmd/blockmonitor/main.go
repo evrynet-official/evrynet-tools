@@ -10,13 +10,6 @@ import (
 	"github.com/evrynet-official/evrynet-tools/lib/node"
 )
 
-const (
-	// TimeTicker dur ticker run
-	TimeTicker = 30 // seconds
-	// MaxTimes is a max try to sending messages
-	MaxTimes = 3 //the times try sends message
-)
-
 type Client struct {
 	TeleClient *blockmonitor.Telegram
 	BlcClient  *blockmonitor.Blockchain
@@ -44,6 +37,7 @@ func healthCheckCommand() []cli.Command {
 		Description: `Alert to telegram when block is stuck`,
 	}
 	healthCheckCmd.Flags = blockmonitor.NewTeleClientFlag()
+	healthCheckCmd.Flags = append(healthCheckCmd.Flags, blockmonitor.NewBlcClientFlag()...)
 	healthCheckCmd.Flags = append(healthCheckCmd.Flags, node.NewEvrynetNodeFlags()...)
 
 	return []cli.Command{healthCheckCmd}

@@ -10,6 +10,11 @@ import (
 	"github.com/evrynet-official/evrynet-tools/blockmonitor"
 )
 
+const (
+	// MaxTimes is a max try to sending messages
+	MaxTimes = 3 //the times try sends message
+)
+
 func blcMonitor(ctx *cli.Context) {
 	client := &Client{
 		SendCount: 0,
@@ -33,7 +38,7 @@ func blcMonitor(ctx *cli.Context) {
 	client.BlcClient = blcClient
 	log.Print("evrynet client is created")
 
-	ticker := time.NewTicker(TimeTicker * time.Second)
+	ticker := time.NewTicker(client.BlcClient.Duration * time.Second)
 	for range ticker.C {
 		client.checkNodeAlive()
 	}
