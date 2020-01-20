@@ -7,11 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/evrynet-official/evrynet-client/core/types"
-
-	"github.com/evrynet-official/evrynet-client/ethclient"
 	"github.com/pkg/errors"
 
+	"github.com/Evrynetlabs/evrynet-node/core/types"
+	"github.com/Evrynetlabs/evrynet-node/evrclient"
 	"github.com/evrynet-official/evrynet-tools/lib/timeutil"
 )
 
@@ -22,7 +21,7 @@ type TxMetric struct {
 	endTime              uint64
 	NumBlock             uint64
 	Duration             time.Duration
-	EvrClient            *ethclient.Client
+	EvrClient            *evrclient.Client
 	mu                   *sync.Mutex
 	minuteStats          []int64
 	totalTx              int64

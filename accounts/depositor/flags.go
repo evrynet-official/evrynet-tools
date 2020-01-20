@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/evrynet-official/evrynet-client/accounts/abi/bind"
-	"github.com/evrynet-official/evrynet-client/common"
-	"github.com/evrynet-official/evrynet-client/core/types"
-	"github.com/evrynet-official/evrynet-client/crypto"
+	"github.com/Evrynetlabs/evrynet-node/accounts/abi/bind"
+	"github.com/Evrynetlabs/evrynet-node/common"
+	"github.com/Evrynetlabs/evrynet-node/core/types"
+	"github.com/Evrynetlabs/evrynet-node/crypto"
 	"github.com/urfave/cli"
 	"go.uber.org/zap"
 

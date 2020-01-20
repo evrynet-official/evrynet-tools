@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/evrynet-official/evrynet-client/crypto"
+	"github.com/Evrynetlabs/evrynet-node/crypto"
 	"github.com/urfave/cli"
 	"golang.org/x/crypto/ed25519"
 )

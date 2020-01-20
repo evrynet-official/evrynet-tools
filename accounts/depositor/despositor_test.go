@@ -5,12 +5,12 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/evrynet-official/evrynet-client/accounts/abi/bind"
-	"github.com/evrynet-official/evrynet-client/accounts/abi/bind/backends"
-	"github.com/evrynet-official/evrynet-client/common"
-	"github.com/evrynet-official/evrynet-client/core"
-	"github.com/evrynet-official/evrynet-client/core/types"
-	"github.com/evrynet-official/evrynet-client/crypto"
+	"github.com/Evrynetlabs/evrynet-node/accounts/abi/bind"
+	"github.com/Evrynetlabs/evrynet-node/accounts/abi/bind/backends"
+	"github.com/Evrynetlabs/evrynet-node/common"
+	"github.com/Evrynetlabs/evrynet-node/core"
+	"github.com/Evrynetlabs/evrynet-node/core/types"
+	"github.com/Evrynetlabs/evrynet-node/crypto"
 	zapLog "github.com/evrynet-official/evrynet-tools/lib/log"
 
 	"github.com/stretchr/testify/assert"

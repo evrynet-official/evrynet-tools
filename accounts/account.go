@@ -4,8 +4,8 @@ import (
 	"crypto/ecdsa"
 	"encoding/hex"
 
-	"github.com/evrynet-official/evrynet-client/common"
-	"github.com/evrynet-official/evrynet-client/crypto"
+	"github.com/Evrynetlabs/evrynet-node/common"
+	"github.com/Evrynetlabs/evrynet-node/crypto"
 )
 
 type Account struct {
