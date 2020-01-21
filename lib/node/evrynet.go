@@ -1,7 +1,7 @@
 package node
 
 import (
-	"github.com/evrynet-official/evrynet-client/ethclient"
+	"github.com/Evrynetlabs/evrynet-node/evrclient"
 
 	"github.com/urfave/cli"
 )
@@ -27,7 +27,7 @@ func NewEvrynetNodeFlags() []cli.Flag {
 }
 
 // NewEvrynetClientFromFlags returns Evrynet client from flag variable, or error if occurs
-func NewEvrynetClientFromFlags(ctx *cli.Context) (*ethclient.Client, error) {
+func NewEvrynetClientFromFlags(ctx *cli.Context) (*evrclient.Client, error) {
 	evrynetClientURL := ctx.String(rpcEndpointFlag)
-	return ethclient.Dial(evrynetClientURL)
+	return evrclient.Dial(evrynetClientURL)
 }

@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/evrynet-official/evrynet-client/ethclient"
+	"github.com/Evrynetlabs/evrynet-node/evrclient"
 	"github.com/evrynet-official/evrynet-tools/accounts"
 )
 
@@ -40,7 +40,7 @@ func TestTxFlood_floodNormalMode(t *testing.T) {
 			var err error
 			tt.txFlood.Accounts, err = accounts.GenerateAccounts(tt.txFlood.NumAcc, tt.txFlood.Seed)
 			assert.NoError(t, err)
-			tt.txFlood.EvrClient, err = ethclient.Dial("http://0.0.0.0:22001")
+			tt.txFlood.EvrClient, err = evrclient.Dial("http://0.0.0.0:22001")
 			assert.NoError(t, err)
 			assert.NoError(t, tt.txFlood.Start())
 		})
@@ -78,7 +78,7 @@ func TestTxFlood_floodSmartContractMode(t *testing.T) {
 			var err error
 			tt.txFlood.Accounts, err = accounts.GenerateAccounts(tt.txFlood.NumAcc, tt.txFlood.Seed)
 			assert.NoError(t, err)
-			tt.txFlood.EvrClient, err = ethclient.Dial("http://0.0.0.0:22001")
+			tt.txFlood.EvrClient, err = evrclient.Dial("http://0.0.0.0:22001")
 			assert.NoError(t, err)
 			assert.NoError(t, tt.txFlood.Start())
 		})
@@ -116,7 +116,7 @@ func TestTxFlood_floodDefaultMode(t *testing.T) {
 			var err error
 			tt.txFlood.Accounts, err = accounts.GenerateAccounts(tt.txFlood.NumAcc, tt.txFlood.Seed)
 			assert.NoError(t, err)
-			tt.txFlood.EvrClient, err = ethclient.Dial("http://0.0.0.0:22001")
+			tt.txFlood.EvrClient, err = evrclient.Dial("http://0.0.0.0:22001")
 			assert.NoError(t, err)
 			assert.NoError(t, tt.txFlood.Start())
 		})

@@ -12,12 +12,12 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/evrynet-official/evrynet-client"
-	"github.com/evrynet-official/evrynet-client/common"
-	"github.com/evrynet-official/evrynet-client/common/hexutil"
-	"github.com/evrynet-official/evrynet-client/core/types"
-	"github.com/evrynet-official/evrynet-client/ethclient"
-	"github.com/evrynet-official/evrynet-client/params"
+	"github.com/Evrynetlabs/evrynet-node"
+	"github.com/Evrynetlabs/evrynet-node/common"
+	"github.com/Evrynetlabs/evrynet-node/common/hexutil"
+	"github.com/Evrynetlabs/evrynet-node/core/types"
+	"github.com/Evrynetlabs/evrynet-node/evrclient"
+	"github.com/Evrynetlabs/evrynet-node/params"
 
 	"github.com/evrynet-official/evrynet-tools/accounts"
 )
@@ -27,7 +27,7 @@ type TxFlood struct {
 	NumTxPerAcc   int
 	Seed          string
 	FloodMode     FloodMode
-	EvrClient     *ethclient.Client
+	EvrClient     *evrclient.Client
 	Accounts      []*accounts.Account
 	Continuous    bool
 	SleepInterval time.Duration
