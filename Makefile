@@ -14,3 +14,8 @@ tx_metric:
 	go build -v -o ./build/tx_metric ./cmd/tx_metric
 	@echo "Done building."
 	@echo "Run \"./build/tx_metric\" to launch transactions metric."
+
+blockmonitor:
+	go build -v -o ./build/blockmonitor ./cmd/blockmonitor
+	@echo "Done building."
+	@echo "Run \"./build/blockmonitor\" to nonitor node."

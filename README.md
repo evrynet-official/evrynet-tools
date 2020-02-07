@@ -120,3 +120,41 @@ GLOBAL OPTIONS:
 ```  
 To use tx metric you can use this command  
 `./build/tx_metric --rpcendpoint "http://0.0.0.0:22001" --start-block 1681 --duration 60s`
+
+## Build block monitor command line interface  
+```shell script
+$ make blockmonitor
+$ ./build/blockmonitor -h
+NAME:
+   blcMonitor - sends messages to telegram when node dont increase blocks
+
+USAGE:
+   blockmonitor [global options] command [command options] [arguments...]
+
+VERSION:
+   0.0.1
+
+COMMANDS:
+   start    Alert to telegram when block is stuck
+   help, h  Shows a list of commands or help for one command
+
+GLOBAL OPTIONS:
+   --help, -h     show help
+   --version, -v  print the version
+
+$ ./build/blockmonitor start -h
+NAME:
+   blockmonitor start - Alert to telegram when block is stuck
+
+USAGE:
+   blockmonitor start [command options] [arguments...]
+
+DESCRIPTION:
+   Alert to telegram when block is stuck
+
+OPTIONS:
+   --apiToken value     The API token (default: "935265043:AAG02pbFdpOhT31ALs1tzlLTl_NVnxYuTF4")
+   --chatId value       The ID of group/chanel (default: -375817595)
+   --rpcendpoint value  RPC endpoint to send request (default: "http://0.0.0.0:22001")
+
+```  
