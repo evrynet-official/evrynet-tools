@@ -158,3 +158,41 @@ OPTIONS:
    --rpcendpoint value  RPC endpoint to send request (default: "http://0.0.0.0:22001")
 
 ```  
+
+## Build staking command line interface  
+```shell script
+$ make staking
+$ ./build/staking -h
+NAME:
+   stakingClient - sends a vote/ unvote/ register/ resign for a candidate to a node
+
+USAGE:
+   staking [global options] command [command options] [arguments...]
+
+VERSION:
+   0.0.1
+
+COMMANDS:
+   vote      Sends a vote for a candidate
+   unVote    Sends a un-vote for a candidate
+   resign    resign a candidate, only called by owner of that candidate
+   register  register a new candidate
+   help, h   Shows a list of commands or help for one command
+
+GLOBAL OPTIONS:
+   --help, -h     show help
+   --version, -v  print the version
+
+```  
+
+To use staking tool you can use this command  
+
+```
+ ./build/staking resign --stakingsc 0x2d5bd25efa0ab97aaca4e888c5fbcb4866904e46 --adminpk 85af6fd1be0b4314fc00e8da30091541fff1a6a7159032ba9639fea4449e86cc --candidate 0x29ADC9eFC670F453AF8C17b6bB6181D91fd748c8 --ownerpk 8989232d6c283502ae4fc928324d15369a4a973701aee1fcd5792ca2b5fed153 --amount 1
+
+ ./build/staking register --stakingsc 0x2d5bd25efa0ab97aaca4e888c5fbcb4866904e46 --adminpk 85af6fd1be0b4314fc00e8da30091541fff1a6a7159032ba9639fea4449e86cc --candidate 0x29ADC9eFC670F453AF8C17b6bB6181D91fd748c8 --ownerpk 8989232d6c283502ae4fc928324d15369a4a973701aee1fcd5792ca2b5fed153 --amount 1
+
+ ./build/staking vote --stakingsc 0x2d5bd25efa0ab97aaca4e888c5fbcb4866904e46 --candidate 0x29ADC9eFC670F453AF8C17b6bB6181D91fd748c8 --ownerpk 8989232d6c283502ae4fc928324d15369a4a973701aee1fcd5792ca2b5fed153
+
+ ./build/staking unvote --stakingsc 0x2d5bd25efa0ab97aaca4e888c5fbcb4866904e46 --candidate 0x29ADC9eFC670F453AF8C17b6bB6181D91fd748c8 --ownerpk 8989232d6c283502ae4fc928324d15369a4a973701aee1fcd5792ca2b5fed153 --amount 1
+ ```
