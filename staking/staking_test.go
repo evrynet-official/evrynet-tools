@@ -2,7 +2,6 @@ package staking
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"fmt"
 	"math/big"
 	"testing"
@@ -18,12 +17,11 @@ const (
 	TestNodeEndpoint = "http://52.220.52.16:22001"
 	StakingScAddress = "0x2d5bd25efa0ab97aaca4e888c5fbcb4866904e46"
 	AdminPk          = "85af6fd1be0b4314fc00e8da30091541fff1a6a7159032ba9639fea4449e86cc"
-	CandidatePk      = "8989232d6c283502ae4fc928324d15369a4a973701aee1fcd5792ca2b5fed153"
-	Candidate        = "0x29ADC9eFC670F453AF8C17b6bB6181D91fd748c8"
+	Candidate        = "0x71562b71999873DB5b286dF957af199Ec94617F7"
 	EpochTime        = 2 * 40 //seconds
 )
 
-func TestContractClient_Register(t *testing.T) {
+func TestContractClient(t *testing.T) {
 	var (
 		candidate = common.HexToAddress(Candidate)
 	)
@@ -36,364 +34,167 @@ func TestContractClient_Register(t *testing.T) {
 		t.Error("private key invalid", "private key", senderPk)
 	}
 
-	type fields struct {
-		Client    *evrclient.Client
-		StakingSc common.Address
-		SenderPk  *ecdsa.PrivateKey
-		Candidate common.Address
-		Owner     common.Address
-		GasLimit  uint64
-		Amount    *big.Int
+	fmt.Printf("*****************register for new candidate = %s\n", Candidate)
+	contractClient := ContractClient{
+		Client:    client,
+		StakingSc: common.HexToAddress(StakingScAddress),
+		SenderPk:  senderPk,
+		Candidate: candidate,
+		GasLimit:  uint64(8000000),
+		Amount:    new(big.Int).SetUint64(0),
 	}
-	tests := []struct {
-		name    string
-		fields  fields
-		want    []common.Address
-		wantErr bool
-	}{
-		{
-			name: "test register",
-			fields: fields{
-				Client:    client,
-				StakingSc: common.HexToAddress(StakingScAddress),
-				Candidate: candidate,
-				Owner:     candidate,
-				GasLimit:  uint64(8000000),
-				Amount:    new(big.Int).SetUint64(0),
-			},
-		},
+	candidates1, err := contractClient.GetAllCandidates()
+	if err != nil {
+		t.Errorf("GetAllCandidates() error = %v", err)
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			c := ContractClient{
-				Client:    tt.fields.Client,
-				StakingSc: tt.fields.StakingSc,
-				AdminPk:   senderPk,
-				Candidate: tt.fields.Candidate,
-				Owner:     tt.fields.Owner,
-				GasLimit:  tt.fields.GasLimit,
-				Amount:    tt.fields.Amount,
-			}
-			candidates1, err := c.GetAllCandidates()
-			if err != nil {
-				t.Errorf("GetAllCandidates() error = %v", err)
-				return
-			}
-			fmt.Println("Current candidates:")
-			printCandidates(candidates1)
-			tx, err := c.Register()
-			if err != nil && tt.wantErr {
-				t.Errorf("Register() error = %v, wantErr %v", err, tt.wantErr)
-			}
+	fmt.Println("Current candidates:")
+	printCandidates(candidates1)
+	tx, err := contractClient.Register()
+	if err != nil {
+		t.Errorf("Register() error = %v", err)
+	}
 
-			txSucceed := false
-			for i := 0; i < 10; i++ {
-				var receipt *types.Receipt
-				receipt, err = client.TransactionReceipt(context.Background(), tx.Hash())
-				if err == nil {
-					txSucceed = receipt.Status == uint64(1)
-					break
-				}
-				time.Sleep(1 * time.Second)
-			}
+	txSucceed := false
+	for i := 0; i < 10; i++ {
+		var receipt *types.Receipt
+		receipt, err = client.TransactionReceipt(context.Background(), tx.Hash())
+		if err == nil {
+			txSucceed = receipt.Status == uint64(1)
+			break
+		}
+		time.Sleep(1 * time.Second)
+	}
 
-			if !txSucceed {
-				t.Error("Register is not effected")
-				return
-			}
-
-			time.Sleep(EpochTime * time.Second)
-			candidates2, err := c.GetAllCandidates()
-			if err != nil {
-				t.Errorf("GetAllCandidates() error = %v", err)
-				return
-			}
-			if len(candidates2) == len(candidates1) {
-				t.Errorf("Register is not effected, new candidates = %vs", len(candidates2))
-				return
-			}
-
-			fmt.Println("=========================================")
-			fmt.Println("new candidates:")
+	if !txSucceed {
+		t.Error("can not register new candidate")
+	} else {
+		time.Sleep(EpochTime * time.Second)
+		candidates2, err := contractClient.GetAllCandidates()
+		if err != nil {
+			t.Errorf("GetAllCandidates() error = %v", err)
+		}
+		if len(candidates2) == len(candidates1) {
+			t.Errorf("Register is failed, new candidates = %vs", len(candidates2))
+		} else {
+			fmt.Println("successful register a candidate, new candidates:")
 			printCandidates(candidates2)
-		})
+		}
 	}
-}
+	fmt.Println("***************************************************")
 
-func TestContractClient_Vote(t *testing.T) {
-	client, err := evrclient.Dial(TestNodeEndpoint)
+	fmt.Printf("*****************vote for the candidate = %s\n", Candidate)
+	contractClient.Amount = new(big.Int).SetInt64(10)
+	stakeData1, err := contractClient.GetCandidateData()
 	if err != nil {
-		panic(err)
+		t.Errorf("GetCandidateData() error = %v", err)
 	}
-
-	senderPk, err := crypto.HexToECDSA(CandidatePk)
+	fmt.Printf("current staking before vote is %v\n", stakeData1.LatestTotalStakes.Int64())
+	tx, err = contractClient.Vote()
 	if err != nil {
-		t.Error("private key invalid", "private key", senderPk)
+		t.Errorf("Vote() error = %v", err)
 	}
 
-	type fields struct {
-		Client    *evrclient.Client
-		StakingSc common.Address
-		SenderPk  *ecdsa.PrivateKey
-		Candidate common.Address
-		Owner     common.Address
-		GasLimit  uint64
-		Amount    *big.Int
+	txSucceed = false
+	for i := 0; i < 10; i++ {
+		var receipt *types.Receipt
+		receipt, err = client.TransactionReceipt(context.Background(), tx.Hash())
+		if err == nil {
+			txSucceed = receipt.Status == uint64(1)
+			break
+		}
+		time.Sleep(1 * time.Second)
 	}
-	tests := []struct {
-		name    string
-		fields  fields
-		want    []common.Address
-		wantErr bool
-	}{
-		{
-			name: "test vote",
-			fields: fields{
-				Client:    client,
-				StakingSc: common.HexToAddress(StakingScAddress),
-				Candidate: common.HexToAddress(Candidate),
-				Owner:     common.HexToAddress(Candidate),
-				GasLimit:  uint64(8000000),
-				Amount:    new(big.Int).SetUint64(1),
-			},
-		},
+
+	if !txSucceed {
+		t.Error("can not vote")
+	} else {
+		stakeData2, err := contractClient.GetCandidateData()
+		if err != nil {
+			t.Errorf("GetCandidateData() error = %v", err)
+		}
+		if stakeData2.LatestTotalStakes.Int64() != 10 {
+			t.Errorf("Vote is failed, new stakes = %v", stakeData2.LatestTotalStakes.Int64())
+		} else {
+			fmt.Printf("successful vote, last staking is %v\n", stakeData2.LatestTotalStakes.Int64())
+		}
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			c := ContractClient{
-				Client:    tt.fields.Client,
-				StakingSc: tt.fields.StakingSc,
-				AdminPk:   senderPk,
-				Candidate: tt.fields.Candidate,
-				Owner:     tt.fields.Owner,
-				GasLimit:  tt.fields.GasLimit,
-				Amount:    tt.fields.Amount,
-			}
-			stakeData1, err := c.GetCandidateData()
-			if err != nil {
-				t.Errorf("GetListCandidatesWithCurrentData() error = %v", err)
-				return
-			}
-			t.Logf("Current stakes = %v", stakeData1.LatestTotalStakes.Int64())
+	fmt.Println("***************************************************")
 
-			tx, err := c.Vote()
-			if err != nil && tt.wantErr {
-				t.Errorf("Vote() error = %v, wantErr %v", err, tt.wantErr)
-			}
-
-			txSucceed := false
-			for i := 0; i < 10; i++ {
-				var receipt *types.Receipt
-				receipt, err = client.TransactionReceipt(context.Background(), tx.Hash())
-				if err == nil {
-					txSucceed = receipt.Status == uint64(1)
-					break
-				}
-				time.Sleep(1 * time.Second)
-			}
-
-			if !txSucceed {
-				t.Error("Vote is not effected")
-				return
-			}
-
-			time.Sleep(EpochTime * time.Second)
-			stakeData2, err := c.GetCandidateData()
-			if err != nil {
-				t.Errorf("GetListCandidatesWithCurrentData() error = %v", err)
-				return
-			}
-			if stakeData2.LatestTotalStakes.Int64() <= stakeData1.LatestTotalStakes.Int64() {
-				t.Errorf("Register is not effected, new stakes = %vs", stakeData2.LatestTotalStakes.Int64())
-			}
-		})
-	}
-}
-
-func TestContractClient_UnVote(t *testing.T) {
-	client, err := evrclient.Dial(TestNodeEndpoint)
+	fmt.Printf("*****************Un-vote for the candidate = %s\n", Candidate)
+	contractClient.Amount = new(big.Int).SetInt64(1)
+	stakeData1, err = contractClient.GetCandidateData()
 	if err != nil {
-		panic(err)
+		t.Errorf("GetCandidateData() error = %v", err)
 	}
-
-	senderPk, err := crypto.HexToECDSA(CandidatePk)
+	fmt.Printf("current staking before un-vote is %v\n", stakeData1.LatestTotalStakes.Int64())
+	tx, err = contractClient.UnVote()
 	if err != nil {
-		t.Error("private key invalid", "private key", senderPk)
+		t.Errorf("UnVote() error = %v", err)
 	}
 
-	type fields struct {
-		Client    *evrclient.Client
-		StakingSc common.Address
-		SenderPk  *ecdsa.PrivateKey
-		Candidate common.Address
-		Owner     common.Address
-		GasLimit  uint64
-		Amount    *big.Int
+	txSucceed = false
+	for i := 0; i < 10; i++ {
+		var receipt *types.Receipt
+		receipt, err = client.TransactionReceipt(context.Background(), tx.Hash())
+		if err == nil {
+			txSucceed = receipt.Status == uint64(1)
+			break
+		}
+		time.Sleep(1 * time.Second)
 	}
-	tests := []struct {
-		name    string
-		fields  fields
-		want    []common.Address
-		wantErr bool
-	}{
-		{
-			name: "test vote",
-			fields: fields{
-				Client:    client,
-				StakingSc: common.HexToAddress(StakingScAddress),
-				Candidate: common.HexToAddress(Candidate),
-				Owner:     common.HexToAddress(Candidate),
-				GasLimit:  uint64(8000000),
-				Amount:    new(big.Int).SetUint64(1),
-			},
-		},
+
+	if !txSucceed {
+		t.Error("can not un-vote")
+	} else {
+		stakeData2, err := contractClient.GetCandidateData()
+		if err != nil {
+			t.Errorf("GetCandidateData() error = %v", err)
+		}
+		if stakeData2.LatestTotalStakes.Int64() != 9 {
+			t.Errorf("Unvote is failed, new stakes = %v", stakeData2.LatestTotalStakes.Int64())
+		} else {
+			fmt.Printf("successful un-vote, last staking is %v\n", stakeData2.LatestTotalStakes.Int64())
+		}
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			c := ContractClient{
-				Client:    tt.fields.Client,
-				StakingSc: tt.fields.StakingSc,
-				AdminPk:   senderPk,
-				Candidate: tt.fields.Candidate,
-				Owner:     tt.fields.Owner,
-				GasLimit:  tt.fields.GasLimit,
-				Amount:    tt.fields.Amount,
-			}
-			stakeData1, err := c.GetCandidateData()
-			if err != nil {
-				t.Errorf("GetListCandidatesWithCurrentData() error = %v", err)
-				return
-			}
-			t.Logf("Current stakes = %v", stakeData1.LatestTotalStakes.Int64())
+	fmt.Println("***************************************************")
 
-			tx, err := c.UnVote()
-			if err != nil && tt.wantErr {
-				t.Errorf("Vote() error = %v, wantErr %v", err, tt.wantErr)
-			}
-
-			txSucceed := false
-			for i := 0; i < 10; i++ {
-				var receipt *types.Receipt
-				receipt, err = client.TransactionReceipt(context.Background(), tx.Hash())
-				if err == nil {
-					txSucceed = receipt.Status == uint64(1)
-					break
-				}
-				time.Sleep(1 * time.Second)
-			}
-
-			if !txSucceed {
-				t.Error("Vote is not effected")
-				return
-			}
-
-			time.Sleep(EpochTime * time.Second)
-			stakeData2, err := c.GetCandidateData()
-			if err != nil {
-				t.Errorf("GetListCandidatesWithCurrentData() error = %v", err)
-				return
-			}
-			if stakeData2.LatestTotalStakes.Int64() <= stakeData1.LatestTotalStakes.Int64() {
-				t.Errorf("Register is not effected, new stakes = %vs", stakeData2.LatestTotalStakes.Int64())
-			}
-		})
-	}
-}
-
-func TestContractClient_Resign(t *testing.T) {
-	var (
-		candidate = common.HexToAddress(Candidate)
-	)
-	client, err := evrclient.Dial(TestNodeEndpoint)
+	fmt.Printf("*****************Resign for the candidate = %s\n", Candidate)
+	candidates1, err = contractClient.GetAllCandidates()
 	if err != nil {
-		panic(err)
+		t.Errorf("GetAllCandidates() error = %v", err)
 	}
-	senderPk, err := crypto.HexToECDSA(CandidatePk)
+	fmt.Println("Current candidates:")
+	printCandidates(candidates1)
+	tx, err = contractClient.Resign()
 	if err != nil {
-		t.Error("private key invalid", "private key", senderPk)
+		t.Errorf("Resign() error = %v", err)
 	}
 
-	type fields struct {
-		Client    *evrclient.Client
-		StakingSc common.Address
-		SenderPk  *ecdsa.PrivateKey
-		Candidate common.Address
-		Owner     common.Address
-		GasLimit  uint64
-		Amount    *big.Int
+	txSucceed = false
+	for i := 0; i < 10; i++ {
+		var receipt *types.Receipt
+		receipt, err = client.TransactionReceipt(context.Background(), tx.Hash())
+		if err == nil {
+			txSucceed = receipt.Status == uint64(1)
+			break
+		}
+		time.Sleep(1 * time.Second)
 	}
-	tests := []struct {
-		name    string
-		fields  fields
-		want    []common.Address
-		wantErr bool
-	}{
-		{
-			name: "test resign",
-			fields: fields{
-				Client:    client,
-				StakingSc: common.HexToAddress(StakingScAddress),
-				Candidate: candidate,
-				Owner:     candidate,
-				GasLimit:  uint64(8000000),
-				Amount:    new(big.Int).SetUint64(0),
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			c := ContractClient{
-				Client:    tt.fields.Client,
-				StakingSc: tt.fields.StakingSc,
-				AdminPk:   senderPk,
-				Candidate: tt.fields.Candidate,
-				Owner:     tt.fields.Owner,
-				GasLimit:  tt.fields.GasLimit,
-				Amount:    tt.fields.Amount,
-			}
-			candidates1, err := c.GetAllCandidates()
-			if err != nil {
-				t.Errorf("GetAllCandidates() error = %v", err)
-				return
-			}
-			fmt.Println("Current candidates:")
-			printCandidates(candidates1)
-			tx, err := c.Resign()
-			if err != nil && tt.wantErr {
-				t.Errorf("Register() error = %v, wantErr %v", err, tt.wantErr)
-			}
 
-			txSucceed := false
-			for i := 0; i < 10; i++ {
-				var receipt *types.Receipt
-				receipt, err = client.TransactionReceipt(context.Background(), tx.Hash())
-				if err == nil {
-					txSucceed = receipt.Status == uint64(1)
-					break
-				}
-				time.Sleep(1 * time.Second)
-			}
-
-			if !txSucceed {
-				t.Error("Register is not effected")
-				return
-			}
-
-			time.Sleep(EpochTime * time.Second)
-			candidates2, err := c.GetAllCandidates()
-			if err != nil {
-				t.Errorf("GetAllCandidates() error = %v", err)
-				return
-			}
-			if len(candidates2) == len(candidates1) {
-				t.Errorf("Register is not effected, new candidates = %vs", len(candidates2))
-				return
-			}
-
-			fmt.Println("=========================================")
-			fmt.Println("new candidates:")
+	if !txSucceed {
+		t.Error("can not resign")
+	} else {
+		time.Sleep(EpochTime * time.Second)
+		candidates2, err := contractClient.GetAllCandidates()
+		if err != nil {
+			t.Errorf("GetAllCandidates() error = %v", err)
+		}
+		if len(candidates2) == len(candidates1) {
+			t.Errorf("Resign is failed, new candidates = %vs", len(candidates2))
+		} else {
+			fmt.Println("successful resign a candidate, new candidates:")
 			printCandidates(candidates2)
-		})
+		}
 	}
 }
 

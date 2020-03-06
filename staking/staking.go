@@ -23,20 +23,15 @@ var (
 		Usage: "address of staking smart-contract (Address in string format: 0x...)",
 		Value: "0x2d5bd25efa0ab97aaca4e888c5fbcb4866904e46",
 	}
-	adminPkFlag = cli.StringFlag{
-		Name:  "adminpk",
-		Usage: "the private key of admin staking SC",
+	senderPkFlag = cli.StringFlag{
+		Name:  "senderpk",
+		Usage: "the private key of admin/ owner/ user",
 		Value: "85af6fd1be0b4314fc00e8da30091541fff1a6a7159032ba9639fea4449e86cc",
 	}
 	candidateFlag = cli.StringFlag{
 		Name:  "candidate",
 		Usage: "the address of candidate (Address in string format: 0x...)",
-		Value: "0x29ADC9eFC670F453AF8C17b6bB6181D91fd748c8",
-	}
-	ownerPkFlag = cli.StringFlag{
-		Name:  "ownerpk",
-		Usage: "the private key of owner's candidate",
-		Value: "8989232d6c283502ae4fc928324d15369a4a973701aee1fcd5792ca2b5fed153",
+		Value: "0x71562b71999873DB5b286dF957af199Ec94617F7",
 	}
 	gasLimitFlag = cli.Uint64Flag{
 		Name:  "gaslimit",
@@ -52,16 +47,14 @@ var (
 
 // NewStakingFlag returns flags for Staking contract client
 func NewStakingFlag() []cli.Flag {
-	return []cli.Flag{stakingScFlag, adminPkFlag, candidateFlag, ownerPkFlag, gasLimitFlag, amountFlag}
+	return []cli.Flag{stakingScFlag, senderPkFlag, candidateFlag, gasLimitFlag, amountFlag}
 }
 
 type ContractClient struct {
 	Client    *evrclient.Client
 	StakingSc common.Address
-	AdminPk   *ecdsa.PrivateKey
+	SenderPk  *ecdsa.PrivateKey
 	Candidate common.Address
-	OwnerPk   *ecdsa.PrivateKey
-	Owner     common.Address
 	GasLimit  uint64
 	Amount    *big.Int
 }
@@ -69,9 +62,8 @@ type ContractClient struct {
 func NewNewStakingFromFlags(ctx *cli.Context) (*ContractClient, error) {
 	var (
 		stakingSc      = ctx.String(stakingScFlag.Name)
-		senderPkString = ctx.String(adminPkFlag.Name)
+		senderPkString = ctx.String(senderPkFlag.Name)
 		candidate      = ctx.String(candidateFlag.Name)
-		ownerPkString  = ctx.String(ownerPkFlag.Name)
 		amount         = ctx.Int64(amountFlag.Name)
 		gasLimit       = ctx.Uint64(gasLimitFlag.Name)
 	)
@@ -85,16 +77,8 @@ func NewNewStakingFromFlags(ctx *cli.Context) (*ContractClient, error) {
 	if senderPkString == "" {
 		return nil, errors.New("the private key of admin is invalid")
 	}
-	if ownerPkString == "" {
-		return nil, errors.New("the private key of owner candidate is invalid")
-	}
 
-	adminPk, err := crypto.HexToECDSA(senderPkString)
-	if err != nil {
-		return nil, err
-	}
-
-	ownerPk, err := crypto.HexToECDSA(ownerPkString)
+	senderPk, err := crypto.HexToECDSA(senderPkString)
 	if err != nil {
 		return nil, err
 	}
@@ -107,9 +91,7 @@ func NewNewStakingFromFlags(ctx *cli.Context) (*ContractClient, error) {
 	contractClient := &ContractClient{
 		Client:    client,
 		StakingSc: common.HexToAddress(stakingSc),
-		AdminPk:   adminPk,
-		OwnerPk:   ownerPk,
-		Owner:     crypto.PubkeyToAddress(ownerPk.PublicKey),
+		SenderPk:  senderPk,
 		Candidate: common.HexToAddress(candidate),
 		Amount:    new(big.Int).SetInt64(amount),
 		GasLimit:  gasLimit,
@@ -123,8 +105,9 @@ func (c ContractClient) Vote() (*types.Transaction, error) {
 		return nil, err
 	}
 
-	optTrans := bind.NewKeyedTransactor(c.AdminPk)
+	optTrans := bind.NewKeyedTransactor(c.SenderPk)
 	optTrans.GasLimit = c.GasLimit
+	optTrans.Value = c.Amount
 	tx, err := contract.Vote(optTrans, c.Candidate)
 	if err != nil {
 		return nil, err
@@ -169,7 +152,7 @@ func (c ContractClient) UnVote() (*types.Transaction, error) {
 		return nil, err
 	}
 
-	optTrans := bind.NewKeyedTransactor(c.AdminPk)
+	optTrans := bind.NewKeyedTransactor(c.SenderPk)
 	optTrans.GasLimit = c.GasLimit
 	tx, err := contract.Unvote(optTrans, c.Candidate, c.Amount)
 	if err != nil {
@@ -185,7 +168,7 @@ func (c ContractClient) Resign() (*types.Transaction, error) {
 		return nil, err
 	}
 
-	optTrans := bind.NewKeyedTransactor(c.AdminPk)
+	optTrans := bind.NewKeyedTransactor(c.SenderPk)
 	optTrans.GasLimit = c.GasLimit
 	tx, err := contract.Resign(optTrans, c.Candidate)
 	if err != nil {
@@ -201,9 +184,9 @@ func (c ContractClient) Register() (*types.Transaction, error) {
 		return nil, err
 	}
 
-	optTrans := bind.NewKeyedTransactor(c.AdminPk)
+	optTrans := bind.NewKeyedTransactor(c.SenderPk)
 	optTrans.GasLimit = c.GasLimit
-	tx, err := contract.Register(optTrans, c.Candidate, c.Owner)
+	tx, err := contract.Register(optTrans, c.Candidate, optTrans.From)
 	if err != nil {
 		return nil, err
 	}

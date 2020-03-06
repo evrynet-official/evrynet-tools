@@ -188,11 +188,12 @@ GLOBAL OPTIONS:
 To use staking tool you can use this command  
 
 ```
- ./build/staking resign --stakingsc 0x2d5bd25efa0ab97aaca4e888c5fbcb4866904e46 --adminpk 85af6fd1be0b4314fc00e8da30091541fff1a6a7159032ba9639fea4449e86cc --candidate 0x29ADC9eFC670F453AF8C17b6bB6181D91fd748c8 --ownerpk 8989232d6c283502ae4fc928324d15369a4a973701aee1fcd5792ca2b5fed153 --amount 1
+ ./build/staking register --stakingsc 0x2d5bd25efa0ab97aaca4e888c5fbcb4866904e46 --senderpk 85af6fd1be0b4314fc00e8da30091541fff1a6a7159032ba9639fea4449e86cc --candidate 0x71562b71999873DB5b286dF957af199Ec94617F7
 
- ./build/staking register --stakingsc 0x2d5bd25efa0ab97aaca4e888c5fbcb4866904e46 --adminpk 85af6fd1be0b4314fc00e8da30091541fff1a6a7159032ba9639fea4449e86cc --candidate 0x29ADC9eFC670F453AF8C17b6bB6181D91fd748c8 --ownerpk 8989232d6c283502ae4fc928324d15369a4a973701aee1fcd5792ca2b5fed153 --amount 1
+ ./build/staking vote --stakingsc 0x2d5bd25efa0ab97aaca4e888c5fbcb4866904e46 --senderpk 85af6fd1be0b4314fc00e8da30091541fff1a6a7159032ba9639fea4449e86cc --candidate 0x71562b71999873DB5b286dF957af199Ec94617F7 --amount 10
 
- ./build/staking vote --stakingsc 0x2d5bd25efa0ab97aaca4e888c5fbcb4866904e46 --candidate 0x29ADC9eFC670F453AF8C17b6bB6181D91fd748c8 --ownerpk 8989232d6c283502ae4fc928324d15369a4a973701aee1fcd5792ca2b5fed153
+ ./build/staking unvote --stakingsc 0x2d5bd25efa0ab97aaca4e888c5fbcb4866904e46 --senderpk 85af6fd1be0b4314fc00e8da30091541fff1a6a7159032ba9639fea4449e86cc --candidate 0x71562b71999873DB5b286dF957af199Ec94617F7 --amount 1
 
- ./build/staking unvote --stakingsc 0x2d5bd25efa0ab97aaca4e888c5fbcb4866904e46 --candidate 0x29ADC9eFC670F453AF8C17b6bB6181D91fd748c8 --ownerpk 8989232d6c283502ae4fc928324d15369a4a973701aee1fcd5792ca2b5fed153 --amount 1
+ ./build/staking resign --stakingsc 0x2d5bd25efa0ab97aaca4e888c5fbcb4866904e46 --senderpk 85af6fd1be0b4314fc00e8da30091541fff1a6a7159032ba9639fea4449e86cc --candidate 0x71562b71999873DB5b286dF957af199Ec94617F7 
+
  ```
