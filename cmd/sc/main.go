@@ -7,7 +7,7 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/evrynet-official/evrynet-tools/lib/node"
-	"github.com/evrynet-official/evrynet-tools/staking"
+	"github.com/evrynet-official/evrynet-tools/sc"
 )
 
 func main() {
@@ -24,7 +24,7 @@ func main() {
 }
 
 func stakingCommands() []cli.Command {
-	flags := staking.NewStakingFlag()
+	flags := sc.NewStakingFlag()
 	flags = append(flags, node.NewEvrynetNodeFlags()...)
 
 	voteCmd := cli.Command{

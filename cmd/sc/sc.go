@@ -5,11 +5,11 @@ import (
 
 	"github.com/urfave/cli"
 
-	"github.com/evrynet-official/evrynet-tools/staking"
+	"github.com/evrynet-official/evrynet-tools/sc"
 )
 
 func vote(ctx *cli.Context) {
-	stakingClient, err := staking.NewNewStakingFromFlags(ctx)
+	stakingClient, err := sc.NewNewStakingFromFlags(ctx)
 	if err != nil {
 		log.Printf("can not initialize a staking contract client %s", err.Error())
 		return
@@ -21,7 +21,7 @@ func vote(ctx *cli.Context) {
 }
 
 func unVote(ctx *cli.Context) {
-	stakingClient, err := staking.NewNewStakingFromFlags(ctx)
+	stakingClient, err := sc.NewNewStakingFromFlags(ctx)
 	if err != nil {
 		log.Printf("can not initialize a staking contract client %s", err.Error())
 		return
@@ -33,7 +33,7 @@ func unVote(ctx *cli.Context) {
 }
 
 func resign(ctx *cli.Context) {
-	stakingClient, err := staking.NewNewStakingFromFlags(ctx)
+	stakingClient, err := sc.NewNewStakingFromFlags(ctx)
 	if err != nil {
 		log.Printf("can not initialize a staking contract client %s", err.Error())
 		return
@@ -45,7 +45,7 @@ func resign(ctx *cli.Context) {
 }
 
 func register(ctx *cli.Context) {
-	stakingClient, err := staking.NewNewStakingFromFlags(ctx)
+	stakingClient, err := sc.NewNewStakingFromFlags(ctx)
 	if err != nil {
 		log.Printf("can not initialize a staking contract client %s", err.Error())
 		return
