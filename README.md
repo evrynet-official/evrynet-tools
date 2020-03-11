@@ -161,20 +161,20 @@ OPTIONS:
 
 ## Build staking command line interface  
 ```shell script
-$ make staking
-$ ./build/staking -h
+$ make sc
+$ ./build/sc -h
 NAME:
    stakingClient - sends a vote/ unvote/ register/ resign for a candidate to a node
 
 USAGE:
-   staking [global options] command [command options] [arguments...]
+   sc [global options] command [command options] [arguments...]
 
 VERSION:
    0.0.1
 
 COMMANDS:
    vote      Sends a vote for a candidate
-   unVote    Sends a un-vote for a candidate
+   unvote    Sends a un-vote for a candidate
    resign    resign a candidate, only called by owner of that candidate
    register  register a new candidate
    help, h   Shows a list of commands or help for one command
@@ -188,12 +188,12 @@ GLOBAL OPTIONS:
 To use staking tool you can use this command  
 
 ```
- ./build/staking register --stakingsc 0x2d5bd25efa0ab97aaca4e888c5fbcb4866904e46 --senderpk 85af6fd1be0b4314fc00e8da30091541fff1a6a7159032ba9639fea4449e86cc --candidate 0x71562b71999873DB5b286dF957af199Ec94617F7
+ ./build/sc register --stakingsc 0x2d5bd25efa0ab97aaca4e888c5fbcb4866904e46 --senderpk 85af6fd1be0b4314fc00e8da30091541fff1a6a7159032ba9639fea4449e86cc --candidate 0x71562b71999873DB5b286dF957af199Ec94617F7
 
- ./build/staking vote --stakingsc 0x2d5bd25efa0ab97aaca4e888c5fbcb4866904e46 --senderpk 85af6fd1be0b4314fc00e8da30091541fff1a6a7159032ba9639fea4449e86cc --candidate 0x71562b71999873DB5b286dF957af199Ec94617F7 --amount 10
+ ./build/sc vote --stakingsc 0x2d5bd25efa0ab97aaca4e888c5fbcb4866904e46 --senderpk 85af6fd1be0b4314fc00e8da30091541fff1a6a7159032ba9639fea4449e86cc --candidate 0x71562b71999873DB5b286dF957af199Ec94617F7 --amount 10
 
- ./build/staking unvote --stakingsc 0x2d5bd25efa0ab97aaca4e888c5fbcb4866904e46 --senderpk 85af6fd1be0b4314fc00e8da30091541fff1a6a7159032ba9639fea4449e86cc --candidate 0x71562b71999873DB5b286dF957af199Ec94617F7 --amount 1
+ ./build/sc unvote --stakingsc 0x2d5bd25efa0ab97aaca4e888c5fbcb4866904e46 --senderpk 85af6fd1be0b4314fc00e8da30091541fff1a6a7159032ba9639fea4449e86cc --candidate 0x71562b71999873DB5b286dF957af199Ec94617F7 --amount 1
 
- ./build/staking resign --stakingsc 0x2d5bd25efa0ab97aaca4e888c5fbcb4866904e46 --senderpk 85af6fd1be0b4314fc00e8da30091541fff1a6a7159032ba9639fea4449e86cc --candidate 0x71562b71999873DB5b286dF957af199Ec94617F7 
+ ./build/sc resign --stakingsc 0x2d5bd25efa0ab97aaca4e888c5fbcb4866904e46 --senderpk 85af6fd1be0b4314fc00e8da30091541fff1a6a7159032ba9639fea4449e86cc --candidate 0x71562b71999873DB5b286dF957af199Ec94617F7 
 
  ```

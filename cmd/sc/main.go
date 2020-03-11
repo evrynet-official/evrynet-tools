@@ -37,7 +37,7 @@ func stakingCommands() []cli.Command {
 
 	unVoteCmd := cli.Command{
 		Action:      unVote,
-		Name:        "unVote",
+		Name:        "unvote",
 		Usage:       "Sends a un-vote for a candidate",
 		Description: `Sends a un-vote for a candidate`,
 		Flags:       flags,
