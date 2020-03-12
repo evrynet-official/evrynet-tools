@@ -7,17 +7,20 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Evrynetlabs/evrynet-node/accounts/abi/bind"
 	"github.com/Evrynetlabs/evrynet-node/common"
+	stakingContracts "github.com/Evrynetlabs/evrynet-node/consensus/staking_contracts"
 	"github.com/Evrynetlabs/evrynet-node/core/types"
 	"github.com/Evrynetlabs/evrynet-node/crypto"
 	"github.com/Evrynetlabs/evrynet-node/evrclient"
+	"github.com/evrynet-official/evrynet-tools/lib/log"
 )
 
 const (
-	TestNodeEndpoint = "http://52.220.52.16:22001"
-	StakingScAddress = "0x2d5bd25efa0ab97aaca4e888c5fbcb4866904e46"
+	TestNodeEndpoint = "http://0.0.0.0:22001"
+	StakingScAddress = "0x0000000000000000000000000000000000000011"
 	AdminPk          = "85af6fd1be0b4314fc00e8da30091541fff1a6a7159032ba9639fea4449e86cc"
-	Candidate        = "0x71562b71999873DB5b286dF957af199Ec94617F7"
+	Candidate        = "0x45F8B547A7f16730c0C8961A21b56c31d84DdB49"
 	EpochTime        = 2 * 40 //seconds
 )
 
@@ -34,22 +37,40 @@ func TestContractClient(t *testing.T) {
 		t.Error("private key invalid", "private key", senderPk)
 	}
 
+	stakingScAddr := common.HexToAddress(StakingScAddress)
+	contract, err := stakingContracts.NewStakingContracts(stakingScAddr, client)
+	if err != nil {
+		t.Error("cannot create the instance of staking contract", "staking address", StakingScAddress)
+	}
+
+	optTrans := bind.NewKeyedTransactor(senderPk)
+	optTrans.GasLimit = 8000000
+
+	zap, flush, err := log.NewSugaredLogger(nil)
+	if err != nil {
+		t.Error("cannot create the instance of zap logger", "error", err)
+	}
+
+	defer flush()
 	fmt.Printf("*****************register for new candidate = %s\n", Candidate)
 	contractClient := ContractClient{
+		Contract:  contract,
 		Client:    client,
-		StakingSc: common.HexToAddress(StakingScAddress),
+		StakingSc: stakingScAddr,
 		SenderPk:  senderPk,
 		Candidate: candidate,
-		GasLimit:  uint64(8000000),
 		Amount:    new(big.Int).SetUint64(0),
+		TranOps:   optTrans,
+		Logger:    zap,
 	}
-	candidates1, err := contractClient.GetAllCandidates()
+
+	candidates1, err := contractClient.GetAllCandidates(nil)
 	if err != nil {
 		t.Errorf("GetAllCandidates() error = %v", err)
 	}
 	fmt.Println("Current candidates:")
 	printCandidates(candidates1)
-	tx, err := contractClient.Register()
+	tx, err := contractClient.Register(nil)
 	if err != nil {
 		t.Errorf("Register() error = %v", err)
 	}
@@ -69,7 +90,7 @@ func TestContractClient(t *testing.T) {
 		t.Error("can not register new candidate")
 	} else {
 		time.Sleep(EpochTime * time.Second)
-		candidates2, err := contractClient.GetAllCandidates()
+		candidates2, err := contractClient.GetAllCandidates(nil)
 		if err != nil {
 			t.Errorf("GetAllCandidates() error = %v", err)
 		}
@@ -83,13 +104,13 @@ func TestContractClient(t *testing.T) {
 	fmt.Println("***************************************************")
 
 	fmt.Printf("*****************vote for the candidate = %s\n", Candidate)
-	contractClient.Amount = new(big.Int).SetInt64(10)
-	stakeData1, err := contractClient.GetCandidateData()
+	contractClient.Amount = new(big.Int).SetInt64(100)
+	stakeData1, err := contractClient.GetCandidateData(nil)
 	if err != nil {
 		t.Errorf("GetCandidateData() error = %v", err)
 	}
 	fmt.Printf("current staking before vote is %v\n", stakeData1.LatestTotalStakes.Int64())
-	tx, err = contractClient.Vote()
+	tx, err = contractClient.Vote(nil)
 	if err != nil {
 		t.Errorf("Vote() error = %v", err)
 	}
@@ -108,11 +129,11 @@ func TestContractClient(t *testing.T) {
 	if !txSucceed {
 		t.Error("can not vote")
 	} else {
-		stakeData2, err := contractClient.GetCandidateData()
+		stakeData2, err := contractClient.GetCandidateData(nil)
 		if err != nil {
 			t.Errorf("GetCandidateData() error = %v", err)
 		}
-		if stakeData2.LatestTotalStakes.Int64() != 10 {
+		if stakeData2.LatestTotalStakes.Int64() != 100 {
 			t.Errorf("Vote is failed, new stakes = %v", stakeData2.LatestTotalStakes.Int64())
 		} else {
 			fmt.Printf("successful vote, last staking is %v\n", stakeData2.LatestTotalStakes.Int64())
@@ -121,13 +142,13 @@ func TestContractClient(t *testing.T) {
 	fmt.Println("***************************************************")
 
 	fmt.Printf("*****************Un-vote for the candidate = %s\n", Candidate)
-	contractClient.Amount = new(big.Int).SetInt64(1)
-	stakeData1, err = contractClient.GetCandidateData()
+	contractClient.Amount = new(big.Int).SetInt64(10)
+	stakeData1, err = contractClient.GetCandidateData(nil)
 	if err != nil {
 		t.Errorf("GetCandidateData() error = %v", err)
 	}
 	fmt.Printf("current staking before un-vote is %v\n", stakeData1.LatestTotalStakes.Int64())
-	tx, err = contractClient.UnVote()
+	tx, err = contractClient.UnVote(nil)
 	if err != nil {
 		t.Errorf("UnVote() error = %v", err)
 	}
@@ -146,7 +167,7 @@ func TestContractClient(t *testing.T) {
 	if !txSucceed {
 		t.Error("can not un-vote")
 	} else {
-		stakeData2, err := contractClient.GetCandidateData()
+		stakeData2, err := contractClient.GetCandidateData(nil)
 		if err != nil {
 			t.Errorf("GetCandidateData() error = %v", err)
 		}
@@ -159,13 +180,13 @@ func TestContractClient(t *testing.T) {
 	fmt.Println("***************************************************")
 
 	fmt.Printf("*****************Resign for the candidate = %s\n", Candidate)
-	candidates1, err = contractClient.GetAllCandidates()
+	candidates1, err = contractClient.GetAllCandidates(nil)
 	if err != nil {
 		t.Errorf("GetAllCandidates() error = %v", err)
 	}
 	fmt.Println("Current candidates:")
 	printCandidates(candidates1)
-	tx, err = contractClient.Resign()
+	tx, err = contractClient.Resign(nil)
 	if err != nil {
 		t.Errorf("Resign() error = %v", err)
 	}
@@ -185,7 +206,7 @@ func TestContractClient(t *testing.T) {
 		t.Error("can not resign")
 	} else {
 		time.Sleep(EpochTime * time.Second)
-		candidates2, err := contractClient.GetAllCandidates()
+		candidates2, err := contractClient.GetAllCandidates(nil)
 		if err != nil {
 			t.Errorf("GetAllCandidates() error = %v", err)
 		}

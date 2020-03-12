@@ -20,7 +20,7 @@ blockmonitor:
 	@echo "Done building."
 	@echo "Run \"./build/blockmonitor\" to nonitor node."
 
-sc:
-	go build -v -o ./build/sc ./cmd/sc
+smartcontract:
+	go build -v -o ./build/sc ./cmd/smartcontract
 	@echo "Done building."
 	@echo 'Run "./build/sc" to interact with staking contract.'

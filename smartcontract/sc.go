@@ -6,6 +6,7 @@ import (
 	"math/big"
 
 	"github.com/urfave/cli"
+	"go.uber.org/zap"
 
 	"github.com/Evrynetlabs/evrynet-node/accounts/abi/bind"
 	"github.com/Evrynetlabs/evrynet-node/common"
@@ -13,7 +14,6 @@ import (
 	"github.com/Evrynetlabs/evrynet-node/core/types"
 	"github.com/Evrynetlabs/evrynet-node/crypto"
 	"github.com/Evrynetlabs/evrynet-node/evrclient"
-	"github.com/Evrynetlabs/evrynet-node/log"
 	"github.com/evrynet-official/evrynet-tools/lib/node"
 )
 
@@ -50,21 +50,24 @@ func NewStakingFlag() []cli.Flag {
 	return []cli.Flag{stakingScFlag, senderPkFlag, candidateFlag, gasLimitFlag, amountFlag}
 }
 
+// ContractClient returns a struct
 type ContractClient struct {
+	Contract  *stakingContracts.StakingContracts
 	Client    *evrclient.Client
 	StakingSc common.Address
 	SenderPk  *ecdsa.PrivateKey
 	Candidate common.Address
-	GasLimit  uint64
 	Amount    *big.Int
+	TranOps   *bind.TransactOpts
+	Logger    *zap.SugaredLogger
 }
 
-func NewNewStakingFromFlags(ctx *cli.Context) (*ContractClient, error) {
+func NewNewStakingFromFlags(ctx *cli.Context, logger *zap.SugaredLogger) (*ContractClient, error) {
 	var (
 		stakingSc      = ctx.String(stakingScFlag.Name)
 		senderPkString = ctx.String(senderPkFlag.Name)
 		candidate      = ctx.String(candidateFlag.Name)
-		amount         = ctx.Int64(amountFlag.Name)
+		amount         = new(big.Int).SetInt64(ctx.Int64(amountFlag.Name))
 		gasLimit       = ctx.Uint64(gasLimitFlag.Name)
 	)
 
@@ -74,10 +77,6 @@ func NewNewStakingFromFlags(ctx *cli.Context) (*ContractClient, error) {
 	if !common.IsHexAddress(candidate) {
 		return nil, errors.New("the address of candidate is invalid")
 	}
-	if senderPkString == "" {
-		return nil, errors.New("the private key of admin is invalid")
-	}
-
 	senderPk, err := crypto.HexToECDSA(senderPkString)
 	if err != nil {
 		return nil, err
@@ -87,110 +86,103 @@ func NewNewStakingFromFlags(ctx *cli.Context) (*ContractClient, error) {
 	if err != nil {
 		return nil, err
 	}
+	stakeSCAddr := common.HexToAddress(stakingSc)
+	contract, err := stakingContracts.NewStakingContracts(stakeSCAddr, client)
+	if err != nil {
+		return nil, err
+	}
+	optTrans := bind.NewKeyedTransactor(senderPk)
+	optTrans.GasLimit = gasLimit
+	optTrans.Value = amount
 
 	contractClient := &ContractClient{
+		Contract:  contract,
 		Client:    client,
-		StakingSc: common.HexToAddress(stakingSc),
+		StakingSc: stakeSCAddr,
 		SenderPk:  senderPk,
 		Candidate: common.HexToAddress(candidate),
-		Amount:    new(big.Int).SetInt64(amount),
-		GasLimit:  gasLimit,
+		Amount:    amount,
+		TranOps:   optTrans,
+		Logger:    logger,
 	}
 	return contractClient, nil
 }
 
-func (c ContractClient) Vote() (*types.Transaction, error) {
+// Vote sends a transaction to vote for a candidate
+func (c ContractClient) Vote(optTrans *bind.TransactOpts) (*types.Transaction, error) {
 	contract, err := stakingContracts.NewStakingContracts(c.StakingSc, c.Client)
 	if err != nil {
 		return nil, err
 	}
-
-	optTrans := bind.NewKeyedTransactor(c.SenderPk)
-	optTrans.GasLimit = c.GasLimit
-	optTrans.Value = c.Amount
+	if optTrans == nil {
+		optTrans = c.TranOps
+	}
 	tx, err := contract.Vote(optTrans, c.Candidate)
 	if err != nil {
 		return nil, err
 	}
-	log.Info("vote for a candidate is succeed", "candidate", c.Candidate)
+	c.Logger.Infow("transaction is sent", "candidate", c.Candidate.Hex())
 	return tx, nil
 }
 
-func (c ContractClient) GetCandidateData() (*struct {
+// UnVote sends a transaction to un-vote for a candidate
+func (c ContractClient) UnVote(optTrans *bind.TransactOpts) (*types.Transaction, error) {
+	if optTrans == nil {
+		optTrans = c.TranOps
+	}
+	tx, err := c.Contract.Unvote(optTrans, c.Candidate, c.Amount)
+	if err != nil {
+		return nil, err
+	}
+	c.Logger.Infow("transaction is sent", "candidate", c.Candidate.Hex())
+	return tx, nil
+}
+
+// Resign sends a transaction to re-sign for a candidate
+func (c ContractClient) Resign(optTrans *bind.TransactOpts) (*types.Transaction, error) {
+	if optTrans == nil {
+		optTrans = c.TranOps
+	}
+	tx, err := c.Contract.Resign(optTrans, c.Candidate)
+	if err != nil {
+		return nil, err
+	}
+	c.Logger.Infow("transaction is sent", "candidate", c.Candidate.Hex())
+	return tx, nil
+}
+
+// Register sends a transaction to register for a candidate
+func (c ContractClient) Register(optTrans *bind.TransactOpts) (*types.Transaction, error) {
+	if optTrans == nil {
+		optTrans = c.TranOps
+	}
+	tx, err := c.Contract.Register(optTrans, c.Candidate, optTrans.From)
+	if err != nil {
+		return nil, err
+	}
+
+	c.Logger.Infow("transaction is sent", "candidate", c.Candidate.Hex())
+	return tx, nil
+}
+
+// GetCandidateData returns the data of a candidate form SC
+func (c ContractClient) GetCandidateData(opts *bind.CallOpts) (*struct {
 	IsActiveCandidate bool
 	Owner             common.Address
 	LatestTotalStakes *big.Int
 }, error) {
-	contract, err := stakingContracts.NewStakingContracts(c.StakingSc, c.Client)
-	if err != nil {
-		return nil, err
-	}
-	opts := new(bind.CallOpts)
-	response, err := contract.GetCandidateData(opts, c.Candidate)
+	response, err := c.Contract.GetCandidateData(opts, c.Candidate)
 	if err != nil {
 		return nil, err
 	}
 	return &response, nil
 }
 
-func (c ContractClient) GetAllCandidates() ([]common.Address, error) {
-	contract, err := stakingContracts.NewStakingContracts(c.StakingSc, c.Client)
-	if err != nil {
-		return nil, err
-	}
-	opts := new(bind.CallOpts)
-	response, err := contract.GetAllCandidates(opts)
+// GetAllCandidates returns list candidate from SC
+func (c ContractClient) GetAllCandidates(opts *bind.CallOpts) ([]common.Address, error) {
+	response, err := c.Contract.GetAllCandidates(opts)
 	if err != nil {
 		return nil, err
 	}
 	return response, nil
-}
-
-func (c ContractClient) UnVote() (*types.Transaction, error) {
-	contract, err := stakingContracts.NewStakingContracts(c.StakingSc, c.Client)
-	if err != nil {
-		return nil, err
-	}
-
-	optTrans := bind.NewKeyedTransactor(c.SenderPk)
-	optTrans.GasLimit = c.GasLimit
-	tx, err := contract.Unvote(optTrans, c.Candidate, c.Amount)
-	if err != nil {
-		return nil, err
-	}
-	log.Info("un-vote for a candidate is succeed", "candidate", c.Candidate)
-	return tx, nil
-}
-
-func (c ContractClient) Resign() (*types.Transaction, error) {
-	contract, err := stakingContracts.NewStakingContracts(c.StakingSc, c.Client)
-	if err != nil {
-		return nil, err
-	}
-
-	optTrans := bind.NewKeyedTransactor(c.SenderPk)
-	optTrans.GasLimit = c.GasLimit
-	tx, err := contract.Resign(optTrans, c.Candidate)
-	if err != nil {
-		return nil, err
-	}
-	log.Info("re-sign for a candidate is succeed", "candidate", c.Candidate)
-	return tx, nil
-}
-
-func (c ContractClient) Register() (*types.Transaction, error) {
-	contract, err := stakingContracts.NewStakingContracts(c.StakingSc, c.Client)
-	if err != nil {
-		return nil, err
-	}
-
-	optTrans := bind.NewKeyedTransactor(c.SenderPk)
-	optTrans.GasLimit = c.GasLimit
-	tx, err := contract.Register(optTrans, c.Candidate, optTrans.From)
-	if err != nil {
-		return nil, err
-	}
-
-	log.Info("register for a candidate is succeed", "candidate", c.Candidate)
-	return tx, nil
 }
