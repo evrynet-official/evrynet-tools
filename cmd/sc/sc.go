@@ -16,7 +16,7 @@ func vote(ctx *cli.Context) {
 	}
 	_, err = stakingClient.Vote()
 	if err != nil {
-		log.Printf("un-vote for candidate %s got error: %w", stakingClient.Candidate.Hex(), err)
+		log.Printf("un-vote for candidate %s got error: %s\n", stakingClient.Candidate.Hex(), err)
 	}
 }
 
@@ -28,7 +28,7 @@ func unVote(ctx *cli.Context) {
 	}
 	_, err = stakingClient.UnVote()
 	if err != nil {
-		log.Printf("un-vote for candidate %s got error: %w", stakingClient.Candidate.Hex(), err)
+		log.Printf("un-vote for candidate %s got error: %s\n", stakingClient.Candidate.Hex(), err)
 	}
 }
 
@@ -40,7 +40,7 @@ func resign(ctx *cli.Context) {
 	}
 	_, err = stakingClient.Resign()
 	if err != nil {
-		log.Printf("un-vote for candidate %s got error: %w", stakingClient.Candidate.Hex(), err)
+		log.Printf("un-vote for candidate %s got error: %s\n", stakingClient.Candidate.Hex(), err)
 	}
 }
 
@@ -52,6 +52,6 @@ func register(ctx *cli.Context) {
 	}
 	_, err = stakingClient.Register()
 	if err != nil {
-		log.Printf("un-vote for candidate %s got error: %w", stakingClient.Candidate.Hex(), err)
+		log.Printf("un-vote for candidate %s got error: %s\n", stakingClient.Candidate.Hex(), err)
 	}
 }

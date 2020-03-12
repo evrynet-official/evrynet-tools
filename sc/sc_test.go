@@ -84,11 +84,11 @@ func TestContractClient(t *testing.T) {
 
 	fmt.Printf("*****************vote for the candidate = %s\n", Candidate)
 	contractClient.Amount = new(big.Int).SetInt64(10)
-	stakeData1, err := contractClient.GetCandidateData()
+	_, _, stake1, err := contractClient.GetCandidateData()
 	if err != nil {
 		t.Errorf("GetCandidateData() error = %v", err)
 	}
-	fmt.Printf("current staking before vote is %v\n", stakeData1.LatestTotalStakes.Int64())
+	fmt.Printf("current staking before vote is %v\n", stake1.Int64())
 	tx, err = contractClient.Vote()
 	if err != nil {
 		t.Errorf("Vote() error = %v", err)
@@ -108,25 +108,25 @@ func TestContractClient(t *testing.T) {
 	if !txSucceed {
 		t.Error("can not vote")
 	} else {
-		stakeData2, err := contractClient.GetCandidateData()
+		_, _, stake2, err := contractClient.GetCandidateData()
 		if err != nil {
 			t.Errorf("GetCandidateData() error = %v", err)
 		}
-		if stakeData2.LatestTotalStakes.Int64() != 10 {
-			t.Errorf("Vote is failed, new stakes = %v", stakeData2.LatestTotalStakes.Int64())
+		if stake2.Int64() != 10 {
+			t.Errorf("Vote is failed, new stakes = %v", stake2.Int64())
 		} else {
-			fmt.Printf("successful vote, last staking is %v\n", stakeData2.LatestTotalStakes.Int64())
+			fmt.Printf("successful vote, last staking is %v\n", stake2.Int64())
 		}
 	}
 	fmt.Println("***************************************************")
 
 	fmt.Printf("*****************Un-vote for the candidate = %s\n", Candidate)
 	contractClient.Amount = new(big.Int).SetInt64(1)
-	stakeData1, err = contractClient.GetCandidateData()
+	_, _, stake1, err = contractClient.GetCandidateData()
 	if err != nil {
 		t.Errorf("GetCandidateData() error = %v", err)
 	}
-	fmt.Printf("current staking before un-vote is %v\n", stakeData1.LatestTotalStakes.Int64())
+	fmt.Printf("current staking before un-vote is %v\n", stake1.Int64())
 	tx, err = contractClient.UnVote()
 	if err != nil {
 		t.Errorf("UnVote() error = %v", err)
@@ -146,14 +146,14 @@ func TestContractClient(t *testing.T) {
 	if !txSucceed {
 		t.Error("can not un-vote")
 	} else {
-		stakeData2, err := contractClient.GetCandidateData()
+		_, _, stake2, err := contractClient.GetCandidateData()
 		if err != nil {
 			t.Errorf("GetCandidateData() error = %v", err)
 		}
-		if stakeData2.LatestTotalStakes.Int64() != 9 {
-			t.Errorf("Unvote is failed, new stakes = %v", stakeData2.LatestTotalStakes.Int64())
+		if stake2.Int64() != 9 {
+			t.Errorf("Unvote is failed, new stakes = %v", stake2.Int64())
 		} else {
-			fmt.Printf("successful un-vote, last staking is %v\n", stakeData2.LatestTotalStakes.Int64())
+			fmt.Printf("successful un-vote, last staking is %v\n", stake2.Int64())
 		}
 	}
 	fmt.Println("***************************************************")

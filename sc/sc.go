@@ -116,21 +116,17 @@ func (c ContractClient) Vote() (*types.Transaction, error) {
 	return tx, nil
 }
 
-func (c ContractClient) GetCandidateData() (*struct {
-	IsActiveCandidate bool
-	Owner             common.Address
-	LatestTotalStakes *big.Int
-}, error) {
+func (c ContractClient) GetCandidateData() (bool, common.Address, *big.Int, error) {
 	contract, err := stakingContracts.NewStakingContracts(c.StakingSc, c.Client)
 	if err != nil {
-		return nil, err
+		return false, common.Address{}, nil, err
 	}
 	opts := new(bind.CallOpts)
 	response, err := contract.GetCandidateData(opts, c.Candidate)
 	if err != nil {
-		return nil, err
+		return false, common.Address{}, nil, err
 	}
-	return &response, nil
+	return response.IsActiveCandidate, response.Owner, response.TotalStake, nil
 }
 
 func (c ContractClient) GetAllCandidates() ([]common.Address, error) {
@@ -139,11 +135,11 @@ func (c ContractClient) GetAllCandidates() ([]common.Address, error) {
 		return nil, err
 	}
 	opts := new(bind.CallOpts)
-	response, err := contract.GetAllCandidates(opts)
+	response, err := contract.GetListCandidates(opts)
 	if err != nil {
 		return nil, err
 	}
-	return response, nil
+	return response.Candidates, nil
 }
 
 func (c ContractClient) UnVote() (*types.Transaction, error) {
