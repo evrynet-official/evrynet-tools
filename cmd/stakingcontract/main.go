@@ -59,5 +59,20 @@ func stakingCommands() []cli.Command {
 		Flags:       flags,
 	}
 
-	return []cli.Command{voteCmd, unVoteCmd, resignCmd, registerCmd}
+	candidatesCmd := cli.Command{
+		Action:      getCandidates,
+		Name:        "candidates",
+		Usage:       "returns list candidate",
+		Description: `returns list candidate`,
+		Flags:       flags,
+	}
+
+	votersCmd := cli.Command{
+		Action:      getVoters,
+		Name:        "voters",
+		Usage:       "returns list voters of a candidate",
+		Description: `returns list voters of a candidate`,
+		Flags:       flags,
+	}
+	return []cli.Command{voteCmd, unVoteCmd, resignCmd, registerCmd, candidatesCmd, votersCmd}
 }

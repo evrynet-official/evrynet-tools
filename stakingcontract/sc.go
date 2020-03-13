@@ -62,6 +62,7 @@ type ContractClient struct {
 	Logger    *zap.SugaredLogger
 }
 
+// NewNewStakingFromFlags returns new instance of ContractClient
 func NewNewStakingFromFlags(ctx *cli.Context, logger *zap.SugaredLogger) (*ContractClient, error) {
 	var (
 		stakingSc      = ctx.String(stakingScFlag.Name)
@@ -165,24 +166,29 @@ func (c ContractClient) Register(optTrans *bind.TransactOpts) (*types.Transactio
 	return tx, nil
 }
 
-// GetCandidateData returns the data of a candidate form SC
-func (c ContractClient) GetCandidateData(opts *bind.CallOpts) (*struct {
-	IsActiveCandidate bool
-	Owner             common.Address
-	LatestTotalStakes *big.Int
-}, error) {
-	response, err := c.Contract.GetCandidateData(opts, c.Candidate)
+// GetAllCandidates returns list candidate from SC
+func (c ContractClient) GetAllCandidates(opts *bind.CallOpts) ([]common.Address, error) {
+	response, err := c.Contract.GetListCandidates(opts)
 	if err != nil {
 		return nil, err
 	}
-	return &response, nil
+	return response.Candidates, nil
 }
 
-// GetAllCandidates returns list candidate from SC
-func (c ContractClient) GetAllCandidates(opts *bind.CallOpts) ([]common.Address, error) {
-	response, err := c.Contract.GetAllCandidates(opts)
+// GetVoters returns list voters for a candidate from SC
+func (c ContractClient) GetVoters(opts *bind.CallOpts) ([]common.Address, error) {
+	response, err := c.Contract.GetVoters(opts, c.Candidate)
 	if err != nil {
 		return nil, err
 	}
 	return response, nil
+}
+
+// GetCandidateData returns the data of a candidate form SC
+func (c ContractClient) getCandidateData(opts *bind.CallOpts) (bool, common.Address, *big.Int, error) {
+	response, err := c.Contract.GetCandidateData(opts, c.Candidate)
+	if err != nil {
+		return false, common.Address{}, nil, err
+	}
+	return response.IsActiveCandidate, response.Owner, response.TotalStake, nil
 }
