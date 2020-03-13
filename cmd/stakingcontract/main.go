@@ -7,7 +7,7 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/evrynet-official/evrynet-tools/lib/node"
-	"github.com/evrynet-official/evrynet-tools/smartcontract"
+	sc "github.com/evrynet-official/evrynet-tools/stakingcontract"
 )
 
 func main() {

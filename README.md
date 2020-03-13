@@ -161,7 +161,7 @@ OPTIONS:
 
 ## Build staking command line interface  
 ```shell script
-$ make smartcontract
+$ make stakingcontract
 $ ./build/sc -h
 NAME:
    stakingClient - sends a vote/ unvote/ register/ resign for a candidate to a node

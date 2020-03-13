@@ -10,7 +10,7 @@ import (
 	"github.com/Evrynetlabs/evrynet-node/core/types"
 	"github.com/Evrynetlabs/evrynet-node/evrclient"
 	"github.com/evrynet-official/evrynet-tools/lib/log"
-	sc "github.com/evrynet-official/evrynet-tools/smartcontract"
+	sc "github.com/evrynet-official/evrynet-tools/stakingcontract"
 )
 
 func vote(ctx *cli.Context) error {

@@ -2,6 +2,7 @@ package sc
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/big"
 	"testing"
@@ -44,7 +45,6 @@ func TestContractClient(t *testing.T) {
 	}
 
 	optTrans := bind.NewKeyedTransactor(senderPk)
-	optTrans.GasLimit = 8000000
 
 	zap, flush, err := log.NewSugaredLogger(nil)
 	if err != nil {
@@ -75,19 +75,8 @@ func TestContractClient(t *testing.T) {
 		t.Errorf("Register() error = %v", err)
 	}
 
-	txSucceed := false
-	for i := 0; i < 10; i++ {
-		var receipt *types.Receipt
-		receipt, err = client.TransactionReceipt(context.Background(), tx.Hash())
-		if err == nil {
-			txSucceed = receipt.Status == uint64(1)
-			break
-		}
-		time.Sleep(1 * time.Second)
-	}
-
-	if !txSucceed {
-		t.Error("can not register new candidate")
+	if err = checkTransStatus(client, tx); err != nil {
+		t.Error("can not register new candidate", err)
 	} else {
 		time.Sleep(EpochTime * time.Second)
 		candidates2, err := contractClient.GetAllCandidates(nil)
@@ -115,19 +104,8 @@ func TestContractClient(t *testing.T) {
 		t.Errorf("Vote() error = %v", err)
 	}
 
-	txSucceed = false
-	for i := 0; i < 10; i++ {
-		var receipt *types.Receipt
-		receipt, err = client.TransactionReceipt(context.Background(), tx.Hash())
-		if err == nil {
-			txSucceed = receipt.Status == uint64(1)
-			break
-		}
-		time.Sleep(1 * time.Second)
-	}
-
-	if !txSucceed {
-		t.Error("can not vote")
+	if err = checkTransStatus(client, tx); err != nil {
+		t.Error("can not vote", err)
 	} else {
 		stakeData2, err := contractClient.GetCandidateData(nil)
 		if err != nil {
@@ -153,19 +131,8 @@ func TestContractClient(t *testing.T) {
 		t.Errorf("UnVote() error = %v", err)
 	}
 
-	txSucceed = false
-	for i := 0; i < 10; i++ {
-		var receipt *types.Receipt
-		receipt, err = client.TransactionReceipt(context.Background(), tx.Hash())
-		if err == nil {
-			txSucceed = receipt.Status == uint64(1)
-			break
-		}
-		time.Sleep(1 * time.Second)
-	}
-
-	if !txSucceed {
-		t.Error("can not un-vote")
+	if err = checkTransStatus(client, tx); err != nil {
+		t.Error("can not un-vote", err)
 	} else {
 		stakeData2, err := contractClient.GetCandidateData(nil)
 		if err != nil {
@@ -191,19 +158,8 @@ func TestContractClient(t *testing.T) {
 		t.Errorf("Resign() error = %v", err)
 	}
 
-	txSucceed = false
-	for i := 0; i < 10; i++ {
-		var receipt *types.Receipt
-		receipt, err = client.TransactionReceipt(context.Background(), tx.Hash())
-		if err == nil {
-			txSucceed = receipt.Status == uint64(1)
-			break
-		}
-		time.Sleep(1 * time.Second)
-	}
-
-	if !txSucceed {
-		t.Error("can not resign")
+	if err = checkTransStatus(client, tx); err != nil {
+		t.Error("can not resign", err)
 	} else {
 		time.Sleep(EpochTime * time.Second)
 		candidates2, err := contractClient.GetAllCandidates(nil)
@@ -224,4 +180,23 @@ func printCandidates(candidates []common.Address) {
 		fmt.Println(candidates[i].Hex())
 	}
 
+}
+
+func checkTransStatus(client *evrclient.Client, tx *types.Transaction) error {
+	var err error
+	if tx == nil {
+		return errors.New("transaction is nil")
+	}
+	for i := 0; i < 10; i++ {
+		var receipt *types.Receipt
+		receipt, err = client.TransactionReceipt(context.Background(), tx.Hash())
+		if err == nil {
+			if receipt.Status != uint64(1) {
+				return errors.New("transaction's status is failed")
+			}
+			return nil
+		}
+		time.Sleep(1 * time.Second)
+	}
+	return err
 }
