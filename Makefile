@@ -24,3 +24,8 @@ stakingcontract:
 	go build -v -o ./build/sc ./cmd/stakingcontract
 	@echo "Done building."
 	@echo 'Run "./build/sc" to interact with staking contract.'
+
+stresssc:
+	go build -v -o ./build/stresssc ./cmd/stress_sc
+	@echo "Done building."
+	@echo 'Run "./build/stresssc" to interact with staking contract.'

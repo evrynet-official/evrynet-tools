@@ -43,6 +43,12 @@ var (
 		Usage: "the amount.",
 		Value: 0,
 	}
+
+	numVoterFlag = cli.Int64Flag{
+		Name:  "numvoter",
+		Usage: "the number of voter want to test.",
+		Value: 10,
+	}
 )
 
 // NewStakingFlag returns flags for Staking contract client (register/ resign)
@@ -55,6 +61,11 @@ func NewStakingVoteOrUnVoteFlag() []cli.Flag {
 	return []cli.Flag{stakingScFlag, senderPkFlag, candidateFlag, gasLimitFlag, amountFlag}
 }
 
+// NewStressTestFlag returns flags for Staking contract client
+func NewStressTestFlag() []cli.Flag {
+	return []cli.Flag{stakingScFlag, senderPkFlag, candidateFlag, gasLimitFlag, numVoterFlag, amountFlag}
+}
+
 // ContractClient returns a struct
 type ContractClient struct {
 	Contract  *stakingContracts.StakingContracts
@@ -64,11 +75,11 @@ type ContractClient struct {
 	Candidate common.Address
 	GasLimit  uint64
 	Amount    *big.Int
+	NumVoter  int
 	TranOps   *bind.TransactOpts
 	Logger    *zap.SugaredLogger
 }
 
-// NewNewStakingFromFlags returns new instance of ContractClient
 func NewNewStakingFromFlags(ctx *cli.Context, logger *zap.SugaredLogger) (*ContractClient, error) {
 	var (
 		stakingSc      = ctx.String(stakingScFlag.Name)
@@ -76,6 +87,7 @@ func NewNewStakingFromFlags(ctx *cli.Context, logger *zap.SugaredLogger) (*Contr
 		candidate      = ctx.String(candidateFlag.Name)
 		amount         = new(big.Int).SetInt64(ctx.Int64(amountFlag.Name))
 		gasLimit       = ctx.Uint64(gasLimitFlag.Name)
+		numVoter       = ctx.Int(numVoterFlag.Name)
 	)
 
 	if !common.IsHexAddress(stakingSc) {
@@ -108,6 +120,7 @@ func NewNewStakingFromFlags(ctx *cli.Context, logger *zap.SugaredLogger) (*Contr
 		GasLimit:  gasLimit,
 		Amount:    amount,
 		TranOps:   bind.NewKeyedTransactor(senderPk),
+		NumVoter:  numVoter,
 		Logger:    logger,
 	}
 	return contractClient, nil

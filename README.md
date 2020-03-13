@@ -201,3 +201,33 @@ To use staking tool you can use this command
 ./build/sc voters --rpcendpoint http://0.0.0.0:22001 --stakingsc 0x2d5bd25efa0ab97aaca4e888c5fbcb4866904e46 --senderpk 85af6fd1be0b4314fc00e8da30091541fff1a6a7159032ba9639fea4449e86cc --candidate 0x71562b71999873DB5b286dF957af199Ec94617F7
 
  ```
+
+## Build stress test for staking contract command line interface  
+```shell script
+$ make stresssc
+$ ./build/stresssc -h
+NAME:
+   stress-test tool - testing for staking contract
+
+USAGE:
+   stresssc [global options] command [command options] [arguments...]
+
+VERSION:
+   0.0.1
+
+COMMANDS:
+   stressvotes  sends vote from list voter to a candidate
+   help, h      Shows a list of commands or help for one command
+
+GLOBAL OPTIONS:
+   --help, -h     show help
+   --version, -v  print the version
+
+```  
+
+To use staking tool you can use this command  
+
+```
+ ./build/stresssc stressvotes --rpcendpoint http://0.0.0.0:22001 --numvoter 20 --amount 50 --stakingsc 0x2d5bd25efa0ab97aaca4e888c5fbcb4866904e46 --senderpk 85af6fd1be0b4314fc00e8da30091541fff1a6a7159032ba9639fea4449e86cc --candidate 0x71562b71999873DB5b286dF957af199Ec94617F7
+
+ ```
