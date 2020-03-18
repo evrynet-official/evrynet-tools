@@ -49,6 +49,11 @@ var (
 		Usage: "the number of voter want to test.",
 		Value: 10,
 	}
+	numWorkerFlag = cli.Int64Flag{
+		Name:  "numworker",
+		Usage: "the number of worker want to supports for testing.",
+		Value: 4,
+	}
 )
 
 // NewStakingFlag returns flags for Staking contract client (register/ resign)
@@ -63,7 +68,7 @@ func NewStakingVoteOrUnVoteFlag() []cli.Flag {
 
 // NewStressTestFlag returns flags for Staking contract client
 func NewStressTestFlag() []cli.Flag {
-	return []cli.Flag{stakingScFlag, senderPkFlag, candidateFlag, gasLimitFlag, numVoterFlag, amountFlag}
+	return []cli.Flag{stakingScFlag, senderPkFlag, candidateFlag, gasLimitFlag, numVoterFlag, numWorkerFlag, amountFlag}
 }
 
 // ContractClient returns a struct
@@ -87,7 +92,8 @@ func NewNewStakingFromFlags(ctx *cli.Context, logger *zap.SugaredLogger) (*Contr
 		candidate      = ctx.String(candidateFlag.Name)
 		amount         = new(big.Int).SetInt64(ctx.Int64(amountFlag.Name))
 		gasLimit       = ctx.Uint64(gasLimitFlag.Name)
-		numVoter       = ctx.Int(numVoterFlag.Name)
+		numVoters      = ctx.Int(numVoterFlag.Name)
+		numWorkers     = ctx.Int(numWorkerFlag.Name)
 	)
 
 	if !common.IsHexAddress(stakingSc) {
@@ -112,16 +118,17 @@ func NewNewStakingFromFlags(ctx *cli.Context, logger *zap.SugaredLogger) (*Contr
 	}
 
 	contractClient := &ContractClient{
-		Contract:  contract,
-		Client:    client,
-		StakingSc: stakeSCAddr,
-		SenderPk:  senderPk,
-		Candidate: common.HexToAddress(candidate),
-		GasLimit:  gasLimit,
-		Amount:    amount,
-		TranOps:   bind.NewKeyedTransactor(senderPk),
-		NumVoter:  numVoter,
-		Logger:    logger,
+		Contract:   contract,
+		Client:     client,
+		StakingSc:  stakeSCAddr,
+		SenderPk:   senderPk,
+		Candidate:  common.HexToAddress(candidate),
+		GasLimit:   gasLimit,
+		Amount:     amount,
+		TranOps:    bind.NewKeyedTransactor(senderPk),
+		NumVoters:  numVoters,
+		NumWorkers: numWorkers,
+		Logger:     logger,
 	}
 	return contractClient, nil
 }
@@ -205,6 +212,15 @@ func (c ContractClient) GetAllCandidates(opts *bind.CallOpts) ([]common.Address,
 // GetVoters returns list voters for a candidate from SC
 func (c ContractClient) GetVoters(opts *bind.CallOpts) ([]common.Address, error) {
 	response, err := c.Contract.GetVoters(opts, c.Candidate)
+	if err != nil {
+		return nil, err
+	}
+	return response, nil
+}
+
+// GetVoterStake returns the staking of a voter from SC
+func (c ContractClient) GetVoterStake(opts *bind.CallOpts, voter common.Address) (*big.Int, error) {
+	response, err := c.Contract.GetVoterStake(opts, c.Candidate, voter)
 	if err != nil {
 		return nil, err
 	}

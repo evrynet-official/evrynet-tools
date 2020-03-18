@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"math"
 	"math/big"
+	"time"
 
 	"github.com/urfave/cli"
 	"go.uber.org/zap"
@@ -31,20 +33,34 @@ func stressVoters(ctx *cli.Context) error {
 		return err
 	}
 
-	voters, err := generateAccounts(stakingClient.Logger, stakingClient.NumVoter)
+	accounts, err := generateAccounts(stakingClient.Logger, stakingClient.NumVoters)
 	if err != nil {
 		return err
 	}
-	err = sendEvrToken(stakingClient, voters)
+	err = sendEvrToken(stakingClient, accounts)
 	if err != nil {
 		return err
 	}
-	err = voteForCandidate(stakingClient, voters, stakingClient.Candidate)
+	err = voteForCandidate(stakingClient, accounts, stakingClient.Candidate)
 	if err != nil {
 		return err
 	}
 
-	stakingClient.Logger.Infow("all voters have sent votes for candidate", "candidate", stakingClient.Candidate.Hex())
+	stakingClient.Logger.Infow("start getVoters from SC")
+	start := time.Now()
+	voters, err := stakingClient.GetVoters(nil)
+	if err != nil {
+		return err
+	}
+	stakingClient.Logger.Infow("getVoters", "number of Voter", len(voters), "elapsed", common.PrettyDuration(time.Since(start)))
+
+	stakingClient.Logger.Infow("start getVoterStake from SC")
+	start = time.Now()
+	stake, err := stakingClient.GetVoterStake(nil, voters[0])
+	if err != nil {
+		return err
+	}
+	stakingClient.Logger.Infow("getVoterStake", "voter", voters[0], "stake", stake, "elapsed", common.PrettyDuration(time.Since(start)))
 	return nil
 }
 
@@ -52,43 +68,51 @@ func voteForCandidate(contractClient *sc.ContractClient, votes []*accounts.Accou
 	var (
 		gr       = errgroup.Group{}
 		logger   = contractClient.Logger.With("func", "voteForCandidate", "candidate", candidate.Hex())
-		optTrans = bind.NewKeyedTransactor(contractClient.SenderPk)
-		gasLimit = uint64(8000000)
-		amount   = new(big.Int).SetUint64(50)
+		optTrans *bind.TransactOpts
 	)
 
-	for i := 0; i < len(votes); i++ {
-		addr, voterPk := votes[i].Address, votes[i].PriKey
-		nonce, err := contractClient.Client.PendingNonceAt(context.Background(), addr)
-		if err != nil {
-			return err
+	batchSize := int(math.Floor(float64(len(votes)) / float64(contractClient.NumWorkers)))
+	for workerIndex := 0; workerIndex <= contractClient.NumWorkers; workerIndex++ {
+		from := workerIndex * batchSize
+		to := (workerIndex + 1) * batchSize
+		if workerIndex == contractClient.NumWorkers {
+			to = len(votes)
 		}
-
-		optTrans = bind.NewKeyedTransactor(voterPk)
-		optTrans.GasLimit = gasLimit
-		optTrans.Nonce = new(big.Int).SetUint64(nonce)
-		optTrans.Value = amount
-
-		logger.Infow("begin vote for candidate", "account", addr)
-		tx, err := contractClient.Contract.Vote(optTrans, candidate)
-		if err != nil {
-			logger.Errorw("failed to vote for candidate", "error", err)
-			return err
-		}
-		nonce++
 		gr.Go(func() error {
-			_, wErr := sc.WaitForTx(contractClient.Client, tx.Hash())
-			if wErr != nil {
-				logger.Errorw("failed to vote for candidate", "error", wErr)
-				return wErr
+			for i := from; i < to; i++ {
+				addr, voterPk := votes[i].Address, votes[i].PriKey
+				nonce, err := contractClient.Client.PendingNonceAt(context.Background(), addr)
+				if err != nil {
+					return err
+				}
+
+				optTrans = bind.NewKeyedTransactor(voterPk)
+				optTrans.GasLimit = contractClient.TranOps.GasLimit
+				optTrans.Nonce = new(big.Int).SetUint64(nonce)
+				optTrans.Value = contractClient.TranOps.Value
+
+				logger.Infow("begin vote for candidate", "number", (i + 1), "account", addr)
+				tx, err := contractClient.Contract.Vote(optTrans, candidate)
+				if err != nil {
+					logger.Errorw("failed to vote for candidate", "number", (i + 1), "error", err)
+					return err
+				}
+				_, wErr := sc.WaitForTx(contractClient.Client, tx.Hash())
+				if wErr != nil {
+					logger.Errorw("failed to vote for candidate", "number", "error", "account", addr, wErr)
+					return wErr
+				}
+				logger.Infow("account have sent a vote", "account", addr)
 			}
-			logger.Infow("account have sent a vote", "account", addr)
+
 			return nil
 		})
 	}
+
 	if err := gr.Wait(); err != nil {
 		return err
 	}
+	logger.Infow("all voters have sent votes for candidate", "total_account", len(votes))
 	return nil
 }
 

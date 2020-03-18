@@ -149,6 +149,6 @@ func getVoters(ctx *cli.Context) error {
 		return err
 	}
 	sc.PrintCandidates(voters)
-	fmt.Printf("There are (%v) voters had voted for candidate (%s)\n", len(voters), stakingClient.Candidate.Hex())
+	fmt.Printf("There were (%v) voters voting for candidate (%s)\n", len(voters), stakingClient.Candidate.Hex())
 	return nil
 }
