@@ -57,6 +57,7 @@ type ContractClient struct {
 	StakingSc common.Address
 	SenderPk  *ecdsa.PrivateKey
 	Candidate common.Address
+	GasLimit  uint64
 	Amount    *big.Int
 	TranOps   *bind.TransactOpts
 	Logger    *zap.SugaredLogger
@@ -92,9 +93,6 @@ func NewNewStakingFromFlags(ctx *cli.Context, logger *zap.SugaredLogger) (*Contr
 	if err != nil {
 		return nil, err
 	}
-	optTrans := bind.NewKeyedTransactor(senderPk)
-	optTrans.GasLimit = gasLimit
-	optTrans.Value = amount
 
 	contractClient := &ContractClient{
 		Contract:  contract,
@@ -102,8 +100,9 @@ func NewNewStakingFromFlags(ctx *cli.Context, logger *zap.SugaredLogger) (*Contr
 		StakingSc: stakeSCAddr,
 		SenderPk:  senderPk,
 		Candidate: common.HexToAddress(candidate),
+		GasLimit:  gasLimit,
 		Amount:    amount,
-		TranOps:   optTrans,
+		TranOps:   bind.NewKeyedTransactor(senderPk),
 		Logger:    logger,
 	}
 	return contractClient, nil

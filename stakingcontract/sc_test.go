@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/evrynet-official/evrynet-tools/lib/log"
+	"github.com/evrynet-official/evrynet-tools/lib/txutil"
 
 	"github.com/Evrynetlabs/evrynet-node/accounts/abi/bind"
 	"github.com/Evrynetlabs/evrynet-node/common"
@@ -16,10 +17,10 @@ import (
 )
 
 const (
-	TestNodeEndpoint = "http://0.0.0.0:22001"
+	TestNodeEndpoint = "http://35.240.219.203:22001"
 	StakingScAddress = "0x0000000000000000000000000000000000000011"
 	AdminPk          = "85af6fd1be0b4314fc00e8da30091541fff1a6a7159032ba9639fea4449e86cc"
-	Candidate        = "0x45F8B547A7f16730c0C8961A21b56c31d84DdB49"
+	Candidate        = "0x71562b71999873DB5b286dF957af199Ec94617F7"
 	EpochTime        = 2 * 40 //seconds
 )
 
@@ -42,8 +43,6 @@ func TestContractClient(t *testing.T) {
 		t.Error("cannot create the instance of staking contract", "staking address", StakingScAddress)
 	}
 
-	optTrans := bind.NewKeyedTransactor(senderPk)
-
 	zap, flush, err := log.NewSugaredLogger(nil)
 	if err != nil {
 		t.Error("cannot create the instance of zap logger", "error", err)
@@ -57,8 +56,8 @@ func TestContractClient(t *testing.T) {
 		StakingSc: stakingScAddr,
 		SenderPk:  senderPk,
 		Candidate: candidate,
+		GasLimit:  8000000,
 		Amount:    new(big.Int).SetUint64(0),
-		TranOps:   optTrans,
 		Logger:    zap,
 	}
 
@@ -68,12 +67,16 @@ func TestContractClient(t *testing.T) {
 	}
 	fmt.Println("Current candidates:")
 	PrintCandidates(candidates1)
-	tx, err := contractClient.Register(nil)
+
+	optTrans := bind.NewKeyedTransactor(senderPk)
+	optTrans.GasLimit = contractClient.GasLimit
+
+	tx, err := contractClient.Register(optTrans)
 	if err != nil {
 		t.Errorf("Register() error = %v", err)
 	}
 
-	if err = CheckTransStatus(client, tx); err != nil {
+	if err = txutil.CheckTransStatus(client, tx); err != nil {
 		t.Error("can not register new candidate", err)
 	} else {
 		time.Sleep(EpochTime * time.Second)
@@ -97,12 +100,17 @@ func TestContractClient(t *testing.T) {
 		t.Errorf("GetCandidateData() error = %v", err)
 	}
 	fmt.Printf("current staking before vote is %v\n", stake1.Int64())
-	tx, err = contractClient.Vote(nil)
+
+	optTrans = bind.NewKeyedTransactor(senderPk)
+	optTrans.GasLimit = contractClient.GasLimit
+	optTrans.Value = contractClient.Amount
+
+	tx, err = contractClient.Vote(optTrans)
 	if err != nil {
 		t.Errorf("Vote() error = %v", err)
 	}
 
-	if err = CheckTransStatus(client, tx); err != nil {
+	if err = txutil.CheckTransStatus(client, tx); err != nil {
 		t.Error("can not vote", err)
 	} else {
 		_, _, stake2, err := contractClient.getCandidateData(nil)
@@ -124,12 +132,17 @@ func TestContractClient(t *testing.T) {
 		t.Errorf("GetCandidateData() error = %v", err)
 	}
 	fmt.Printf("current staking before un-vote is %v\n", stake1.Int64())
-	tx, err = contractClient.UnVote(nil)
+
+	optTrans = bind.NewKeyedTransactor(senderPk)
+	optTrans.GasLimit = contractClient.GasLimit
+	optTrans.Value = contractClient.Amount
+
+	tx, err = contractClient.UnVote(optTrans)
 	if err != nil {
 		t.Errorf("UnVote() error = %v", err)
 	}
 
-	if err = CheckTransStatus(client, tx); err != nil {
+	if err = txutil.CheckTransStatus(client, tx); err != nil {
 		t.Error("can not un-vote", err)
 	} else {
 		_, _, stake2, err := contractClient.getCandidateData(nil)
@@ -151,12 +164,16 @@ func TestContractClient(t *testing.T) {
 	}
 	fmt.Println("Current candidates:")
 	PrintCandidates(candidates1)
-	tx, err = contractClient.Resign(nil)
+
+	optTrans = bind.NewKeyedTransactor(senderPk)
+	optTrans.GasLimit = contractClient.GasLimit
+
+	tx, err = contractClient.Resign(optTrans)
 	if err != nil {
 		t.Errorf("Resign() error = %v", err)
 	}
 
-	if err = CheckTransStatus(client, tx); err != nil {
+	if err = txutil.CheckTransStatus(client, tx); err != nil {
 		t.Error("can not resign", err)
 	} else {
 		time.Sleep(EpochTime * time.Second)

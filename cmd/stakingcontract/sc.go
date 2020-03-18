@@ -5,7 +5,9 @@ import (
 
 	"github.com/urfave/cli"
 
+	"github.com/Evrynetlabs/evrynet-node/accounts/abi/bind"
 	"github.com/evrynet-official/evrynet-tools/lib/log"
+	"github.com/evrynet-official/evrynet-tools/lib/txutil"
 	sc "github.com/evrynet-official/evrynet-tools/stakingcontract"
 )
 
@@ -20,12 +22,16 @@ func vote(ctx *cli.Context) error {
 		zap.Errorw("cannot initialize a staking contract client ", "error", err)
 		return err
 	}
-	tx, err := stakingClient.Vote(nil)
+	transOpts := bind.NewKeyedTransactor(stakingClient.SenderPk)
+	transOpts.GasLimit = stakingClient.GasLimit
+	transOpts.Value = stakingClient.Amount
+
+	tx, err := stakingClient.Vote(transOpts)
 	if err != nil {
 		zap.Errorw("votes for candidate got error ", "candidate", stakingClient.Candidate.Hex(), "error", err)
 		return err
 	}
-	if err = sc.CheckTransStatus(stakingClient.Client, tx); err != nil {
+	if err = txutil.CheckTransStatus(stakingClient.Client, tx); err != nil {
 		zap.Errorw("votes for candidate got error ", "candidate", stakingClient.Candidate.Hex(), "error", err)
 		return err
 	}
@@ -44,12 +50,16 @@ func unVote(ctx *cli.Context) error {
 		zap.Errorw("cannot initialize a staking contract client ", "error", err)
 		return err
 	}
-	tx, err := stakingClient.UnVote(nil)
+
+	transOpts := bind.NewKeyedTransactor(stakingClient.SenderPk)
+	transOpts.GasLimit = stakingClient.GasLimit
+
+	tx, err := stakingClient.UnVote(transOpts)
 	if err != nil {
 		zap.Errorw("un-votes for candidate got error ", "candidate", stakingClient.Candidate.Hex(), "error", err)
 		return err
 	}
-	if err = sc.CheckTransStatus(stakingClient.Client, tx); err != nil {
+	if err = txutil.CheckTransStatus(stakingClient.Client, tx); err != nil {
 		zap.Errorw("un-votes for candidate got error ", "candidate", stakingClient.Candidate.Hex(), "error", err)
 		return err
 	}
@@ -68,12 +78,16 @@ func resign(ctx *cli.Context) error {
 		zap.Errorw("cannot initialize a staking contract client ", "error", err)
 		return err
 	}
-	tx, err := stakingClient.Resign(nil)
+
+	transOpts := bind.NewKeyedTransactor(stakingClient.SenderPk)
+	transOpts.GasLimit = stakingClient.GasLimit
+
+	tx, err := stakingClient.Resign(transOpts)
 	if err != nil {
 		zap.Errorw("resigns for candidate got error ", "candidate", stakingClient.Candidate.Hex(), "error", err)
 		return err
 	}
-	if err = sc.CheckTransStatus(stakingClient.Client, tx); err != nil {
+	if err = txutil.CheckTransStatus(stakingClient.Client, tx); err != nil {
 		zap.Errorw("resigns for candidate got error ", "candidate", stakingClient.Candidate.Hex(), "error", err)
 		return err
 	}
@@ -92,12 +106,16 @@ func register(ctx *cli.Context) error {
 		zap.Errorw("cannot initialize a staking contract client ", "error", err)
 		return err
 	}
-	tx, err := stakingClient.Register(nil)
+
+	transOpts := bind.NewKeyedTransactor(stakingClient.SenderPk)
+	transOpts.GasLimit = stakingClient.GasLimit
+
+	tx, err := stakingClient.Register(transOpts)
 	if err != nil {
 		zap.Errorw("registers for candidate got error ", "candidate", stakingClient.Candidate.Hex(), "error", err)
 		return err
 	}
-	if err = sc.CheckTransStatus(stakingClient.Client, tx); err != nil {
+	if err = txutil.CheckTransStatus(stakingClient.Client, tx); err != nil {
 		zap.Errorw("registers for candidate got error ", "candidate", stakingClient.Candidate.Hex(), "error", err)
 		return err
 	}
