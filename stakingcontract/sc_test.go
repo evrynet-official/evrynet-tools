@@ -58,6 +58,7 @@ func TestContractClient(t *testing.T) {
 		Candidate: candidate,
 		GasLimit:  8000000,
 		Amount:    new(big.Int).SetUint64(0),
+		TranOps:   bind.NewKeyedTransactor(senderPk),
 		Logger:    zap,
 	}
 
@@ -68,10 +69,7 @@ func TestContractClient(t *testing.T) {
 	fmt.Println("Current candidates:")
 	PrintCandidates(candidates1)
 
-	optTrans := bind.NewKeyedTransactor(senderPk)
-	optTrans.GasLimit = contractClient.GasLimit
-
-	tx, err := contractClient.Register(optTrans)
+	tx, err := contractClient.Register()
 	if err != nil {
 		t.Errorf("Register() error = %v", err)
 	}
@@ -101,11 +99,7 @@ func TestContractClient(t *testing.T) {
 	}
 	fmt.Printf("current staking before vote is %v\n", stake1.Int64())
 
-	optTrans = bind.NewKeyedTransactor(senderPk)
-	optTrans.GasLimit = contractClient.GasLimit
-	optTrans.Value = contractClient.Amount
-
-	tx, err = contractClient.Vote(optTrans)
+	tx, err = contractClient.Vote()
 	if err != nil {
 		t.Errorf("Vote() error = %v", err)
 	}
@@ -133,11 +127,7 @@ func TestContractClient(t *testing.T) {
 	}
 	fmt.Printf("current staking before un-vote is %v\n", stake1.Int64())
 
-	optTrans = bind.NewKeyedTransactor(senderPk)
-	optTrans.GasLimit = contractClient.GasLimit
-	optTrans.Value = contractClient.Amount
-
-	tx, err = contractClient.UnVote(optTrans)
+	tx, err = contractClient.UnVote()
 	if err != nil {
 		t.Errorf("UnVote() error = %v", err)
 	}
@@ -165,10 +155,7 @@ func TestContractClient(t *testing.T) {
 	fmt.Println("Current candidates:")
 	PrintCandidates(candidates1)
 
-	optTrans = bind.NewKeyedTransactor(senderPk)
-	optTrans.GasLimit = contractClient.GasLimit
-
-	tx, err = contractClient.Resign(optTrans)
+	tx, err = contractClient.Resign()
 	if err != nil {
 		t.Errorf("Resign() error = %v", err)
 	}

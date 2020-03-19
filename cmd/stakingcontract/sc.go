@@ -5,7 +5,6 @@ import (
 
 	"github.com/urfave/cli"
 
-	"github.com/Evrynetlabs/evrynet-node/accounts/abi/bind"
 	"github.com/evrynet-official/evrynet-tools/lib/log"
 	"github.com/evrynet-official/evrynet-tools/lib/txutil"
 	sc "github.com/evrynet-official/evrynet-tools/stakingcontract"
@@ -22,11 +21,8 @@ func vote(ctx *cli.Context) error {
 		zap.Errorw("cannot initialize a staking contract client ", "error", err)
 		return err
 	}
-	transOpts := bind.NewKeyedTransactor(stakingClient.SenderPk)
-	transOpts.GasLimit = stakingClient.GasLimit
-	transOpts.Value = stakingClient.Amount
 
-	tx, err := stakingClient.Vote(transOpts)
+	tx, err := stakingClient.Vote()
 	if err != nil {
 		zap.Errorw("votes for candidate got error ", "candidate", stakingClient.Candidate.Hex(), "error", err)
 		return err
@@ -51,10 +47,7 @@ func unVote(ctx *cli.Context) error {
 		return err
 	}
 
-	transOpts := bind.NewKeyedTransactor(stakingClient.SenderPk)
-	transOpts.GasLimit = stakingClient.GasLimit
-
-	tx, err := stakingClient.UnVote(transOpts)
+	tx, err := stakingClient.UnVote()
 	if err != nil {
 		zap.Errorw("un-votes for candidate got error ", "candidate", stakingClient.Candidate.Hex(), "error", err)
 		return err
@@ -79,10 +72,7 @@ func resign(ctx *cli.Context) error {
 		return err
 	}
 
-	transOpts := bind.NewKeyedTransactor(stakingClient.SenderPk)
-	transOpts.GasLimit = stakingClient.GasLimit
-
-	tx, err := stakingClient.Resign(transOpts)
+	tx, err := stakingClient.Resign()
 	if err != nil {
 		zap.Errorw("resigns for candidate got error ", "candidate", stakingClient.Candidate.Hex(), "error", err)
 		return err
@@ -107,10 +97,7 @@ func register(ctx *cli.Context) error {
 		return err
 	}
 
-	transOpts := bind.NewKeyedTransactor(stakingClient.SenderPk)
-	transOpts.GasLimit = stakingClient.GasLimit
-
-	tx, err := stakingClient.Register(transOpts)
+	tx, err := stakingClient.Register()
 	if err != nil {
 		zap.Errorw("registers for candidate got error ", "candidate", stakingClient.Candidate.Hex(), "error", err)
 		return err

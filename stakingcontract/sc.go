@@ -45,8 +45,13 @@ var (
 	}
 )
 
-// NewStakingFlag returns flags for Staking contract client
+// NewStakingFlag returns flags for Staking contract client (register/ resign)
 func NewStakingFlag() []cli.Flag {
+	return []cli.Flag{stakingScFlag, senderPkFlag, candidateFlag, gasLimitFlag}
+}
+
+// NewStakingVoteOrUnVoteFlag returns flags for Staking contract client (vote/ unvote method)
+func NewStakingVoteOrUnVoteFlag() []cli.Flag {
 	return []cli.Flag{stakingScFlag, senderPkFlag, candidateFlag, gasLimitFlag, amountFlag}
 }
 
@@ -109,15 +114,15 @@ func NewNewStakingFromFlags(ctx *cli.Context, logger *zap.SugaredLogger) (*Contr
 }
 
 // Vote sends a transaction to vote for a candidate
-func (c ContractClient) Vote(optTrans *bind.TransactOpts) (*types.Transaction, error) {
-	contract, err := stakingContracts.NewStakingContracts(c.StakingSc, c.Client)
-	if err != nil {
-		return nil, err
+func (c ContractClient) Vote() (*types.Transaction, error) {
+	optTrans := &bind.TransactOpts{
+		From:     c.TranOps.From,
+		Signer:   c.TranOps.Signer,
+		GasLimit: c.GasLimit,
+		Value:    c.Amount,
 	}
-	if optTrans == nil {
-		optTrans = c.TranOps
-	}
-	tx, err := contract.Vote(optTrans, c.Candidate)
+
+	tx, err := c.Contract.Vote(optTrans, c.Candidate)
 	if err != nil {
 		return nil, err
 	}
@@ -126,10 +131,14 @@ func (c ContractClient) Vote(optTrans *bind.TransactOpts) (*types.Transaction, e
 }
 
 // UnVote sends a transaction to un-vote for a candidate
-func (c ContractClient) UnVote(optTrans *bind.TransactOpts) (*types.Transaction, error) {
-	if optTrans == nil {
-		optTrans = c.TranOps
+func (c ContractClient) UnVote() (*types.Transaction, error) {
+	optTrans := &bind.TransactOpts{
+		From:     c.TranOps.From,
+		Signer:   c.TranOps.Signer,
+		GasLimit: c.GasLimit,
+		Value:    c.Amount,
 	}
+
 	tx, err := c.Contract.Unvote(optTrans, c.Candidate, c.Amount)
 	if err != nil {
 		return nil, err
@@ -139,10 +148,13 @@ func (c ContractClient) UnVote(optTrans *bind.TransactOpts) (*types.Transaction,
 }
 
 // Resign sends a transaction to re-sign for a candidate
-func (c ContractClient) Resign(optTrans *bind.TransactOpts) (*types.Transaction, error) {
-	if optTrans == nil {
-		optTrans = c.TranOps
+func (c ContractClient) Resign() (*types.Transaction, error) {
+	optTrans := &bind.TransactOpts{
+		From:     c.TranOps.From,
+		Signer:   c.TranOps.Signer,
+		GasLimit: c.GasLimit,
 	}
+
 	tx, err := c.Contract.Resign(optTrans, c.Candidate)
 	if err != nil {
 		return nil, err
@@ -152,10 +164,13 @@ func (c ContractClient) Resign(optTrans *bind.TransactOpts) (*types.Transaction,
 }
 
 // Register sends a transaction to register for a candidate
-func (c ContractClient) Register(optTrans *bind.TransactOpts) (*types.Transaction, error) {
-	if optTrans == nil {
-		optTrans = c.TranOps
+func (c ContractClient) Register() (*types.Transaction, error) {
+	optTrans := &bind.TransactOpts{
+		From:     c.TranOps.From,
+		Signer:   c.TranOps.Signer,
+		GasLimit: c.GasLimit,
 	}
+
 	tx, err := c.Contract.Register(optTrans, c.Candidate, optTrans.From)
 	if err != nil {
 		return nil, err

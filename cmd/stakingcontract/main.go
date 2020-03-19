@@ -27,22 +27,6 @@ func stakingCommands() []cli.Command {
 	flags := sc.NewStakingFlag()
 	flags = append(flags, node.NewEvrynetNodeFlags()...)
 
-	voteCmd := cli.Command{
-		Action:      vote,
-		Name:        "vote",
-		Usage:       "Sends a vote for a candidate",
-		Description: `Sends a vote for a candidate`,
-		Flags:       flags,
-	}
-
-	unVoteCmd := cli.Command{
-		Action:      unVote,
-		Name:        "unvote",
-		Usage:       "Sends a un-vote for a candidate",
-		Description: `Sends a un-vote for a candidate`,
-		Flags:       flags,
-	}
-
 	resignCmd := cli.Command{
 		Action:      resign,
 		Name:        "resign",
@@ -74,5 +58,25 @@ func stakingCommands() []cli.Command {
 		Description: `returns list voters of a candidate`,
 		Flags:       flags,
 	}
+
+	voteOrUnvoteFlags := sc.NewStakingVoteOrUnVoteFlag()
+	voteOrUnvoteFlags = append(voteOrUnvoteFlags, node.NewEvrynetNodeFlags()...)
+
+	voteCmd := cli.Command{
+		Action:      vote,
+		Name:        "vote",
+		Usage:       "Sends a vote for a candidate",
+		Description: `Sends a vote for a candidate`,
+		Flags:       voteOrUnvoteFlags,
+	}
+
+	unVoteCmd := cli.Command{
+		Action:      unVote,
+		Name:        "unvote",
+		Usage:       "Sends a un-vote for a candidate",
+		Description: `Sends a un-vote for a candidate`,
+		Flags:       voteOrUnvoteFlags,
+	}
+
 	return []cli.Command{voteCmd, unVoteCmd, resignCmd, registerCmd, candidatesCmd, votersCmd}
 }
