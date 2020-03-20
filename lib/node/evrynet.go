@@ -1,14 +1,14 @@
 package node
 
 import (
-	"github.com/Evrynetlabs/evrynet-node/evrclient"
-
 	"github.com/urfave/cli"
+
+	"github.com/Evrynetlabs/evrynet-node/evrclient"
 )
 
 const (
 	rpcEndpointFlag = "rpcendpoint"
-	evrynetEndpoint = "http://0.0.0.0:22001"
+	evrynetEndpoint = "http://52.220.52.16:22001"
 )
 
 // EvrynetEndpoint returns configured Evrynet node endpoint.

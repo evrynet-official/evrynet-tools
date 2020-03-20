@@ -158,3 +158,46 @@ OPTIONS:
    --rpcendpoint value  RPC endpoint to send request (default: "http://0.0.0.0:22001")
 
 ```  
+
+## Build staking command line interface  
+```shell script
+$ make stakingcontract
+$ ./build/sc -h
+NAME:
+   stakingClient - sends a vote/ unvote/ register/ resign for a candidate to a node
+
+USAGE:
+   sc [global options] command [command options] [arguments...]
+
+VERSION:
+   0.0.1
+
+COMMANDS:
+   vote      Sends a vote for a candidate
+   unvote    Sends a un-vote for a candidate
+   resign    resign a candidate, only called by owner of that candidate
+   register  register a new candidate
+   help, h   Shows a list of commands or help for one command
+
+GLOBAL OPTIONS:
+   --help, -h     show help
+   --version, -v  print the version
+
+```  
+
+To use staking tool you can use this command  
+
+```
+ ./build/sc register --rpcendpoint http://0.0.0.0:22001 --stakingsc 0x2d5bd25efa0ab97aaca4e888c5fbcb4866904e46 --senderpk 85af6fd1be0b4314fc00e8da30091541fff1a6a7159032ba9639fea4449e86cc --candidate 0x71562b71999873DB5b286dF957af199Ec94617F7
+
+ ./build/sc vote --rpcendpoint http://0.0.0.0:22001 --stakingsc 0x2d5bd25efa0ab97aaca4e888c5fbcb4866904e46 --senderpk 85af6fd1be0b4314fc00e8da30091541fff1a6a7159032ba9639fea4449e86cc --candidate 0x71562b71999873DB5b286dF957af199Ec94617F7 --amount 10
+
+ ./build/sc unvote --rpcendpoint http://0.0.0.0:22001 --stakingsc 0x2d5bd25efa0ab97aaca4e888c5fbcb4866904e46 --senderpk 85af6fd1be0b4314fc00e8da30091541fff1a6a7159032ba9639fea4449e86cc --candidate 0x71562b71999873DB5b286dF957af199Ec94617F7 --amount 1
+
+ ./build/sc resign --rpcendpoint http://0.0.0.0:22001 --stakingsc 0x2d5bd25efa0ab97aaca4e888c5fbcb4866904e46 --senderpk 85af6fd1be0b4314fc00e8da30091541fff1a6a7159032ba9639fea4449e86cc --candidate 0x71562b71999873DB5b286dF957af199Ec94617F7 
+ 
+./build/sc candidates --rpcendpoint http://0.0.0.0:22001 --stakingsc 0x2d5bd25efa0ab97aaca4e888c5fbcb4866904e46 --senderpk 85af6fd1be0b4314fc00e8da30091541fff1a6a7159032ba9639fea4449e86cc
+
+./build/sc voters --rpcendpoint http://0.0.0.0:22001 --stakingsc 0x2d5bd25efa0ab97aaca4e888c5fbcb4866904e46 --senderpk 85af6fd1be0b4314fc00e8da30091541fff1a6a7159032ba9639fea4449e86cc --candidate 0x71562b71999873DB5b286dF957af199Ec94617F7
+
+ ```

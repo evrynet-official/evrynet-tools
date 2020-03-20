@@ -19,3 +19,8 @@ blockmonitor:
 	go build -v -o ./build/blockmonitor ./cmd/blockmonitor
 	@echo "Done building."
 	@echo "Run \"./build/blockmonitor\" to nonitor node."
+
+stakingcontract:
+	go build -v -o ./build/sc ./cmd/stakingcontract
+	@echo "Done building."
+	@echo 'Run "./build/sc" to interact with staking contract.'
