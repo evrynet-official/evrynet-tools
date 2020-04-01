@@ -18,6 +18,7 @@ import (
 	"github.com/evrynet-official/evrynet-tools/accounts"
 	"github.com/evrynet-official/evrynet-tools/accounts/depositor"
 	"github.com/evrynet-official/evrynet-tools/lib/log"
+	"github.com/evrynet-official/evrynet-tools/lib/txutil"
 	sc "github.com/evrynet-official/evrynet-tools/stakingcontract"
 )
 
@@ -27,13 +28,13 @@ func stressVoters(ctx *cli.Context) error {
 		return err
 	}
 	defer flush()
-	stakingClient, err := sc.NewNewStakingFromFlags(ctx, zap)
+	stakingClient, err := sc.NewContractClientFromFlags(ctx, zap)
 	if err != nil {
 		stakingClient.Logger.Errorw("cannot initialize a staking contract client ", "error", err)
 		return err
 	}
 
-	accounts, err := generateAccounts(stakingClient.Logger, stakingClient.NumVoters)
+	accounts, err := generateAccounts(stakingClient.Logger, stakingClient.NumVoter)
 	if err != nil {
 		return err
 	}
@@ -71,11 +72,11 @@ func voteForCandidate(contractClient *sc.ContractClient, votes []*accounts.Accou
 		optTrans *bind.TransactOpts
 	)
 
-	batchSize := int(math.Floor(float64(len(votes)) / float64(contractClient.NumWorkers)))
-	for workerIndex := 0; workerIndex <= contractClient.NumWorkers; workerIndex++ {
+	batchSize := int(math.Floor(float64(len(votes)) / float64(contractClient.NumWorker)))
+	for workerIndex := 0; workerIndex <= contractClient.NumWorker; workerIndex++ {
 		from := workerIndex * batchSize
 		to := (workerIndex + 1) * batchSize
-		if workerIndex == contractClient.NumWorkers {
+		if workerIndex == contractClient.NumWorker {
 			to = len(votes)
 		}
 		gr.Go(func() error {
@@ -95,13 +96,12 @@ func voteForCandidate(contractClient *sc.ContractClient, votes []*accounts.Accou
 				tx, err := contractClient.Contract.Vote(optTrans, candidate)
 				if err != nil {
 					logger.Errorw("failed to vote for candidate", "number", (i + 1), "error", err)
-					return err
 				}
-				_, wErr := sc.WaitForTx(contractClient.Client, tx.Hash())
+				wErr := txutil.CheckTransStatus(contractClient.Client, tx)
 				if wErr != nil {
-					logger.Errorw("failed to vote for candidate", "number", "error", "account", addr, wErr)
-					return wErr
+					logger.Errorw("failed to checks the voting to candidate", "number", (i + 1), "account", addr, "error", wErr)
 				}
+
 				logger.Infow("account have sent a vote", "account", addr)
 			}
 

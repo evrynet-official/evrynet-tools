@@ -16,7 +16,7 @@ func vote(ctx *cli.Context) error {
 		return err
 	}
 	defer flush()
-	stakingClient, err := sc.NewNewStakingFromFlags(ctx, zap)
+	stakingClient, err := sc.NewContractClientFromFlags(ctx, zap)
 	if err != nil {
 		zap.Errorw("cannot initialize a staking contract client ", "error", err)
 		return err
@@ -41,7 +41,7 @@ func unVote(ctx *cli.Context) error {
 		return err
 	}
 	defer flush()
-	stakingClient, err := sc.NewNewStakingFromFlags(ctx, zap)
+	stakingClient, err := sc.NewContractClientFromFlags(ctx, zap)
 	if err != nil {
 		zap.Errorw("cannot initialize a staking contract client ", "error", err)
 		return err
@@ -66,7 +66,7 @@ func resign(ctx *cli.Context) error {
 		return err
 	}
 	defer flush()
-	stakingClient, err := sc.NewNewStakingFromFlags(ctx, zap)
+	stakingClient, err := sc.NewContractClientFromFlags(ctx, zap)
 	if err != nil {
 		zap.Errorw("cannot initialize a staking contract client ", "error", err)
 		return err
@@ -91,7 +91,7 @@ func register(ctx *cli.Context) error {
 		return err
 	}
 	defer flush()
-	stakingClient, err := sc.NewNewStakingFromFlags(ctx, zap)
+	stakingClient, err := sc.NewContractClientFromFlags(ctx, zap)
 	if err != nil {
 		zap.Errorw("cannot initialize a staking contract client ", "error", err)
 		return err
@@ -116,7 +116,7 @@ func getCandidates(ctx *cli.Context) error {
 		return err
 	}
 	defer flush()
-	stakingClient, err := sc.NewNewStakingFromFlags(ctx, zap)
+	stakingClient, err := sc.NewContractClientFromFlags(ctx, zap)
 	if err != nil {
 		zap.Errorw("cannot initialize a staking contract client ", "error", err)
 		return err
@@ -138,7 +138,7 @@ func getVoters(ctx *cli.Context) error {
 		return err
 	}
 	defer flush()
-	stakingClient, err := sc.NewNewStakingFromFlags(ctx, zap)
+	stakingClient, err := sc.NewContractClientFromFlags(ctx, zap)
 	if err != nil {
 		zap.Errorw("cannot initialize a staking contract client ", "error", err)
 		return err

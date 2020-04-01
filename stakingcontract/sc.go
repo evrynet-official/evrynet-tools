@@ -81,19 +81,21 @@ type ContractClient struct {
 	GasLimit  uint64
 	Amount    *big.Int
 	NumVoter  int
+	NumWorker int
 	TranOps   *bind.TransactOpts
 	Logger    *zap.SugaredLogger
 }
 
-func NewNewStakingFromFlags(ctx *cli.Context, logger *zap.SugaredLogger) (*ContractClient, error) {
+// NewContractClientFromFlags returns new instance of contract client.
+func NewContractClientFromFlags(ctx *cli.Context, logger *zap.SugaredLogger) (*ContractClient, error) {
 	var (
 		stakingSc      = ctx.String(stakingScFlag.Name)
 		senderPkString = ctx.String(senderPkFlag.Name)
 		candidate      = ctx.String(candidateFlag.Name)
 		amount         = new(big.Int).SetInt64(ctx.Int64(amountFlag.Name))
 		gasLimit       = ctx.Uint64(gasLimitFlag.Name)
-		numVoters      = ctx.Int(numVoterFlag.Name)
-		numWorkers     = ctx.Int(numWorkerFlag.Name)
+		numVoter       = ctx.Int(numVoterFlag.Name)
+		numWorker      = ctx.Int(numWorkerFlag.Name)
 	)
 
 	if !common.IsHexAddress(stakingSc) {
@@ -118,17 +120,17 @@ func NewNewStakingFromFlags(ctx *cli.Context, logger *zap.SugaredLogger) (*Contr
 	}
 
 	contractClient := &ContractClient{
-		Contract:   contract,
-		Client:     client,
-		StakingSc:  stakeSCAddr,
-		SenderPk:   senderPk,
-		Candidate:  common.HexToAddress(candidate),
-		GasLimit:   gasLimit,
-		Amount:     amount,
-		TranOps:    bind.NewKeyedTransactor(senderPk),
-		NumVoters:  numVoters,
-		NumWorkers: numWorkers,
-		Logger:     logger,
+		Contract:  contract,
+		Client:    client,
+		StakingSc: stakeSCAddr,
+		SenderPk:  senderPk,
+		Candidate: common.HexToAddress(candidate),
+		GasLimit:  gasLimit,
+		Amount:    amount,
+		TranOps:   bind.NewKeyedTransactor(senderPk),
+		NumVoter:  numVoter,
+		NumWorker: numWorker,
+		Logger:    logger,
 	}
 	return contractClient, nil
 }
