@@ -228,6 +228,6 @@ GLOBAL OPTIONS:
 To use staking tool you can use this command  
 
 ```
- ./build/stresssc stressvotes --rpcendpoint http://0.0.0.0:22001 --numvoter 20 --amount 50 --stakingsc 0x2d5bd25efa0ab97aaca4e888c5fbcb4866904e46 --senderpk 85af6fd1be0b4314fc00e8da30091541fff1a6a7159032ba9639fea4449e86cc --candidate 0x71562b71999873DB5b286dF957af199Ec94617F7
+ ./build/stresssc stressvotes --rpcendpoint http://0.0.0.0:22001 --numvoter 500000 —numworker 2 --amount 50 —gaslimit 1000000 --stakingsc 0x0000000000000000000000000000000000000011 --senderpk 85af6fd1be0b4314fc00e8da30091541fff1a6a7159032ba9639fea4449e86cc --candidate 0x45F8B547A7f16730c0C8961A21b56c31d84DdB49
 
  ```
