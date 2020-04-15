@@ -36,7 +36,7 @@ var (
 	gasLimitFlag = cli.Uint64Flag{
 		Name:  "gaslimit",
 		Usage: "the gaslimit to execute the call to the contract.",
-		Value: 8000000,
+		Value: 0,
 	}
 	amountFlag = cli.Int64Flag{
 		Name:  "amount",
@@ -144,6 +144,10 @@ func (c ContractClient) Vote() (*types.Transaction, error) {
 		Value:    c.Amount,
 	}
 
+	if c.TranOps.Nonce != nil {
+		optTrans.Nonce = c.TranOps.Nonce
+	}
+
 	tx, err := c.Contract.Vote(optTrans, c.Candidate)
 	if err != nil {
 		return nil, err
@@ -159,6 +163,10 @@ func (c ContractClient) UnVote() (*types.Transaction, error) {
 		Signer:   c.TranOps.Signer,
 		GasLimit: c.GasLimit,
 		Value:    c.Amount,
+	}
+
+	if c.TranOps.Nonce != nil {
+		optTrans.Nonce = c.TranOps.Nonce
 	}
 
 	tx, err := c.Contract.Unvote(optTrans, c.Candidate, c.Amount)
@@ -236,4 +244,13 @@ func (c ContractClient) getCandidateData(opts *bind.CallOpts) (bool, common.Addr
 		return false, common.Address{}, nil, err
 	}
 	return response.IsActiveCandidate, response.Owner, response.TotalStake, nil
+}
+
+// GetVoterStakes returns the staking of a voter from SC
+func (c ContractClient) GetVoterStakes(opts *bind.CallOpts, voters []common.Address) ([]*big.Int, error) {
+	response, err := c.Contract.GetVoterStakes(opts, c.Candidate, voters)
+	if err != nil {
+		return nil, err
+	}
+	return response, nil
 }

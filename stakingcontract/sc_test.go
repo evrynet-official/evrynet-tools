@@ -17,40 +17,36 @@ import (
 )
 
 const (
-	TestNodeEndpoint = "http://35.240.219.203:22001"
+	TestNodeEndpoint = "http://0.0.0.0:22001"
 	StakingScAddress = "0x0000000000000000000000000000000000000011"
 	AdminPk          = "85af6fd1be0b4314fc00e8da30091541fff1a6a7159032ba9639fea4449e86cc"
 	Candidate        = "0x71562b71999873DB5b286dF957af199Ec94617F7"
 	EpochTime        = 2 * 40 //seconds
 )
 
-func TestContractClient(t *testing.T) {
-	var (
-		candidate = common.HexToAddress(Candidate)
-	)
+func initContractClient(candidate common.Address) *ContractClient {
 	client, err := evrclient.Dial(TestNodeEndpoint)
 	if err != nil {
 		panic(err)
 	}
 	senderPk, err := crypto.HexToECDSA(AdminPk)
 	if err != nil {
-		t.Error("private key invalid", "private key", senderPk)
+		panic("private key invalid")
 	}
 
 	stakingScAddr := common.HexToAddress(StakingScAddress)
 	contract, err := stakingContracts.NewStakingContracts(stakingScAddr, client)
 	if err != nil {
-		t.Error("cannot create the instance of staking contract", "staking address", StakingScAddress)
+		panic("cannot create the instance of staking contract")
 	}
 
 	zap, flush, err := log.NewSugaredLogger(nil)
 	if err != nil {
-		t.Error("cannot create the instance of zap logger", "error", err)
+		panic("cannot create the instance of zap logger")
 	}
 
 	defer flush()
-	fmt.Printf("*****************register for new candidate = %s\n", Candidate)
-	contractClient := ContractClient{
+	return &ContractClient{
 		Contract:  contract,
 		Client:    client,
 		StakingSc: stakingScAddr,
@@ -61,6 +57,13 @@ func TestContractClient(t *testing.T) {
 		TranOps:   bind.NewKeyedTransactor(senderPk),
 		Logger:    zap,
 	}
+}
+
+func TestContractClient(t *testing.T) {
+	var (
+		candidate = common.HexToAddress(Candidate)
+	)
+	contractClient := initContractClient(candidate)
 
 	candidates1, err := contractClient.GetAllCandidates(nil)
 	if err != nil {
@@ -74,10 +77,10 @@ func TestContractClient(t *testing.T) {
 		t.Errorf("Register() error = %v", err)
 	}
 
-	if err = txutil.CheckTransStatus(client, tx); err != nil {
+	if err = txutil.CheckTransStatus(contractClient.Client, tx); err != nil {
 		t.Error("can not register new candidate", err)
 	} else {
-		time.Sleep(EpochTime * time.Second)
+		//time.Sleep(EpochTime * time.Second)
 		candidates2, err := contractClient.GetAllCandidates(nil)
 		if err != nil {
 			t.Errorf("GetAllCandidates() error = %v", err)
@@ -104,7 +107,7 @@ func TestContractClient(t *testing.T) {
 		t.Errorf("Vote() error = %v", err)
 	}
 
-	if err = txutil.CheckTransStatus(client, tx); err != nil {
+	if err = txutil.CheckTransStatus(contractClient.Client, tx); err != nil {
 		t.Error("can not vote", err)
 	} else {
 		_, _, stake2, err := contractClient.getCandidateData(nil)
@@ -132,7 +135,7 @@ func TestContractClient(t *testing.T) {
 		t.Errorf("UnVote() error = %v", err)
 	}
 
-	if err = txutil.CheckTransStatus(client, tx); err != nil {
+	if err = txutil.CheckTransStatus(contractClient.Client, tx); err != nil {
 		t.Error("can not un-vote", err)
 	} else {
 		_, _, stake2, err := contractClient.getCandidateData(nil)
@@ -160,7 +163,7 @@ func TestContractClient(t *testing.T) {
 		t.Errorf("Resign() error = %v", err)
 	}
 
-	if err = txutil.CheckTransStatus(client, tx); err != nil {
+	if err = txutil.CheckTransStatus(contractClient.Client, tx); err != nil {
 		t.Error("can not resign", err)
 	} else {
 		time.Sleep(EpochTime * time.Second)
