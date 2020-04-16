@@ -22,6 +22,11 @@ import (
 	sc "github.com/evrynet-official/evrynet-tools/stakingcontract"
 )
 
+const (
+	// MaximumOfAddrArray returns the maximum (in item) of an array of addresses allowed to be sent via getVoterStakes method.
+	MaximumOfAddrArray = 8184
+)
+
 func stressVoters(ctx *cli.Context) error {
 	zap, flush, err := log.NewSugaredLogger(ctx)
 	if err != nil {
@@ -60,23 +65,43 @@ func timeStats(stakingClient *sc.ContractClient) {
 	}
 	stakingClient.Logger.Infow("getVoters", "number of Voter", len(voters), "elapsed", common.PrettyDuration(time.Since(start)))
 
-	stakingClient.Logger.Infow("start getVoterStakes from SC for array voters")
-	start = time.Now()
-	_, err = stakingClient.GetVoterStakes(nil, voters)
-	if err != nil {
+	if len(voters) == 0 {
 		return
 	}
+	stakingClient.Logger.Infow("start getVoterStakes from SC for array voters")
+	var (
+		batchSize = int(MaximumOfAddrArray)
+	)
+	numberWorker := int(len(voters) / batchSize)
+	if len(voters)%batchSize != 0 {
+		numberWorker = numberWorker + 1
+	}
+
+	start = time.Now()
+	for workerIndex := 0; workerIndex < numberWorker; workerIndex++ {
+		offset := workerIndex * batchSize
+		limit := (workerIndex + 1) * batchSize
+		if limit > len(voters) {
+			limit = len(voters)
+		}
+		_, err = stakingClient.GetVoterStakes(nil, voters[offset:limit])
+		if err != nil {
+			stakingClient.Logger.Errorw("getVoterStakes error", "err", err)
+			return
+		}
+	}
+
 	stakingClient.Logger.Infow("getVoterStakes", "number of Voter", len(voters), "elapsed", common.PrettyDuration(time.Since(start)))
 
 }
 
-func voteForCandidate(contractClient *sc.ContractClient, votes []*accounts.Account, candidate common.Address) error {
+func voteForCandidate(contractClient *sc.ContractClient, voters []*accounts.Account, candidate common.Address) error {
 	var (
 		gr     = errgroup.Group{}
 		logger = contractClient.Logger.With("func", "voteForCandidate", "candidate", candidate.Hex())
 	)
 
-	batchSize := int(math.Floor(float64(len(votes)) / float64(contractClient.NumWorker)))
+	batchSize := int(math.Floor(float64(len(voters)) / float64(contractClient.NumWorker)))
 	for workerIndex := 0; workerIndex <= contractClient.NumWorker; workerIndex++ {
 		var (
 			from = workerIndex * batchSize
@@ -84,7 +109,7 @@ func voteForCandidate(contractClient *sc.ContractClient, votes []*accounts.Accou
 		)
 
 		if workerIndex == contractClient.NumWorker {
-			to = len(votes)
+			to = len(voters)
 		}
 		gr.Go(func() error {
 			var (
@@ -92,7 +117,7 @@ func voteForCandidate(contractClient *sc.ContractClient, votes []*accounts.Accou
 				totalTime     = int64(0)
 			)
 			for i := from; i < to; i++ {
-				addr, voterPk := votes[i].Address, votes[i].PriKey
+				addr, voterPk := voters[i].Address, voters[i].PriKey
 				nonce, err := contractClient.Client.PendingNonceAt(context.Background(), addr)
 				if err != nil {
 					return err
@@ -102,19 +127,20 @@ func voteForCandidate(contractClient *sc.ContractClient, votes []*accounts.Accou
 				optTrans.Nonce = new(big.Int).SetUint64(nonce)
 				contractClient.TranOps = optTrans
 
-				logger.Infow("begin vote for candidate", "number", (i + 1), "account", addr, "amount", contractClient.Amount)
+				logger.Infow("begin vote for candidate", "number", i+1, "account", addr, "amount", contractClient.Amount)
 				start := time.Now()
 				tx, err := contractClient.Vote()
 				if err != nil {
-					logger.Errorw("failed to vote for candidate", "number", (i + 1), "error", err)
+					logger.Errorw("failed to vote for candidate", "number", i+1, "error", err)
 				} else {
 					wErr := txutil.CheckTransStatus(contractClient.Client, tx)
 					if wErr != nil {
-						logger.Errorw("failed to checks the voting to candidate", "number", (i + 1), "account", addr, "error", wErr)
+						logger.Errorw("failed to checks the voting to candidate", "number", i+1, "account", addr, "error", wErr)
 					} else {
+						end := time.Since(start)
 						numberSuccess = numberSuccess + 1
-						totalTime = totalTime + time.Since(start).Milliseconds()
-						logger.Infow("account have sent a vote with success", "number", (i + 1), "account", addr)
+						totalTime = totalTime + toMiliseconds(end)
+						logger.Infow("account have sent a vote with success", "number", i+1, "account", addr, "elapsed", common.PrettyDuration(end))
 					}
 				}
 
@@ -132,7 +158,7 @@ func voteForCandidate(contractClient *sc.ContractClient, votes []*accounts.Accou
 	if err := gr.Wait(); err != nil {
 		return err
 	}
-	logger.Infow("all voters have sent votes for candidate", "total_account", len(votes))
+	logger.Infow("all voters have sent votes for candidate", "total_account", len(voters))
 	return nil
 }
 
@@ -160,4 +186,9 @@ func generateAccounts(logger *zap.SugaredLogger, numVoters int) ([]*accounts.Acc
 		return nil, err
 	}
 	return accs, nil
+}
+
+// if go's version >= 1.13 let use buitin function of time.duration
+func toMiliseconds(d time.Duration) int64 {
+	return int64(d) / 1e6
 }

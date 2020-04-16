@@ -1,4 +1,4 @@
-.PHONY: accounts tx_flood tx_metric
+.PHONY: accounts tx_flood tx_metric blockmonitor stakingcontract stresssc
 
 accounts:
 	go build -v -o ./build/accounts ./cmd/accounts
@@ -28,4 +28,4 @@ stakingcontract:
 stresssc:
 	go build -v -o ./build/stresssc ./cmd/stress_sc
 	@echo "Done building."
-	@echo 'Run "./build/stresssc" to interact with staking contract.'
+	@echo 'Run "./build/stresssc" to stress test for staking contract.'

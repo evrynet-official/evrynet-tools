@@ -61,9 +61,9 @@ func initContractClient(candidate common.Address) *ContractClient {
 
 func TestContractClient(t *testing.T) {
 	var (
-		candidate = common.HexToAddress(Candidate)
+		candidate      = common.HexToAddress(Candidate)
+		contractClient = initContractClient(candidate)
 	)
-	contractClient := initContractClient(candidate)
 
 	candidates1, err := contractClient.GetAllCandidates(nil)
 	if err != nil {
@@ -80,7 +80,6 @@ func TestContractClient(t *testing.T) {
 	if err = txutil.CheckTransStatus(contractClient.Client, tx); err != nil {
 		t.Error("can not register new candidate", err)
 	} else {
-		//time.Sleep(EpochTime * time.Second)
 		candidates2, err := contractClient.GetAllCandidates(nil)
 		if err != nil {
 			t.Errorf("GetAllCandidates() error = %v", err)

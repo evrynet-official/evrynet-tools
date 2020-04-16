@@ -13,7 +13,7 @@ import (
 func main() {
 	app := cli.NewApp()
 	app.Name = "stress-test tool"
-	app.Usage = "testing for staking contract"
+	app.Usage = "Stress test for staking contract"
 	app.Version = "0.0.1"
 	app.Commands = stakingCommands()
 
