@@ -61,8 +61,7 @@ func initContractClient(candidate common.Address) *ContractClient {
 
 func TestContractClient(t *testing.T) {
 	var (
-		candidate      = common.HexToAddress(Candidate)
-		contractClient = initContractClient(candidate)
+		contractClient = initContractClient(common.HexToAddress(Candidate))
 	)
 
 	candidates1, err := contractClient.GetAllCandidates(nil)
