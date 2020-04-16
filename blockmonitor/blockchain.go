@@ -6,9 +6,9 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/Evrynetlabs/evrynet-node/evrclient"
 	"github.com/urfave/cli"
 
-	"github.com/evrynet-official/evrynet-client/ethclient"
 	"github.com/evrynet-official/evrynet-tools/lib/node"
 )
 
@@ -26,7 +26,7 @@ func NewBlcClientFlag() []cli.Flag {
 }
 
 type Blockchain struct {
-	Client      *ethclient.Client
+	Client      *evrclient.Client
 	LatestBlock *big.Int
 	Duration    time.Duration
 }

@@ -14,8 +14,12 @@ import (
 	"github.com/Evrynetlabs/evrynet-node/core/types"
 	"github.com/Evrynetlabs/evrynet-node/crypto"
 	"github.com/Evrynetlabs/evrynet-node/evrclient"
+
 	"github.com/evrynet-official/evrynet-tools/lib/node"
 )
+
+// DefaultGasLimit returns default gaslimit to interact with Staking Contract
+const DefaultGasLimit = 8000000
 
 var (
 	stakingScFlag = cli.StringFlag{
@@ -36,12 +40,23 @@ var (
 	gasLimitFlag = cli.Uint64Flag{
 		Name:  "gaslimit",
 		Usage: "the gaslimit to execute the call to the contract.",
-		Value: 8000000,
+		Value: DefaultGasLimit,
 	}
 	amountFlag = cli.Int64Flag{
 		Name:  "amount",
 		Usage: "the amount.",
 		Value: 0,
+	}
+
+	numVoterFlag = cli.Int64Flag{
+		Name:  "numvoter",
+		Usage: "the number of voter want to test.",
+		Value: 10,
+	}
+	numWorkerFlag = cli.Int64Flag{
+		Name:  "numworker",
+		Usage: "the number of worker want to supports for testing.",
+		Value: 4,
 	}
 )
 
@@ -55,6 +70,11 @@ func NewStakingVoteOrUnVoteFlag() []cli.Flag {
 	return []cli.Flag{stakingScFlag, senderPkFlag, candidateFlag, gasLimitFlag, amountFlag}
 }
 
+// NewStressTestFlag returns flags for Staking contract client
+func NewStressTestFlag() []cli.Flag {
+	return []cli.Flag{stakingScFlag, senderPkFlag, candidateFlag, gasLimitFlag, numVoterFlag, numWorkerFlag, amountFlag}
+}
+
 // ContractClient returns a struct
 type ContractClient struct {
 	Contract  *stakingContracts.StakingContracts
@@ -64,18 +84,22 @@ type ContractClient struct {
 	Candidate common.Address
 	GasLimit  uint64
 	Amount    *big.Int
+	NumVoter  int
+	NumWorker int
 	TranOps   *bind.TransactOpts
 	Logger    *zap.SugaredLogger
 }
 
-// NewNewStakingFromFlags returns new instance of ContractClient
-func NewNewStakingFromFlags(ctx *cli.Context, logger *zap.SugaredLogger) (*ContractClient, error) {
+// NewContractClientFromFlags returns new instance of contract client.
+func NewContractClientFromFlags(ctx *cli.Context, logger *zap.SugaredLogger) (*ContractClient, error) {
 	var (
 		stakingSc      = ctx.String(stakingScFlag.Name)
 		senderPkString = ctx.String(senderPkFlag.Name)
 		candidate      = ctx.String(candidateFlag.Name)
 		amount         = new(big.Int).SetInt64(ctx.Int64(amountFlag.Name))
 		gasLimit       = ctx.Uint64(gasLimitFlag.Name)
+		numVoter       = ctx.Int(numVoterFlag.Name)
+		numWorker      = ctx.Int(numWorkerFlag.Name)
 	)
 
 	if !common.IsHexAddress(stakingSc) {
@@ -108,18 +132,24 @@ func NewNewStakingFromFlags(ctx *cli.Context, logger *zap.SugaredLogger) (*Contr
 		GasLimit:  gasLimit,
 		Amount:    amount,
 		TranOps:   bind.NewKeyedTransactor(senderPk),
+		NumVoter:  numVoter,
+		NumWorker: numWorker,
 		Logger:    logger,
 	}
 	return contractClient, nil
 }
 
 // Vote sends a transaction to vote for a candidate
-func (c ContractClient) Vote() (*types.Transaction, error) {
+func (c *ContractClient) Vote() (*types.Transaction, error) {
 	optTrans := &bind.TransactOpts{
 		From:     c.TranOps.From,
 		Signer:   c.TranOps.Signer,
 		GasLimit: c.GasLimit,
 		Value:    c.Amount,
+	}
+
+	if c.TranOps.Nonce != nil {
+		optTrans.Nonce = c.TranOps.Nonce
 	}
 
 	tx, err := c.Contract.Vote(optTrans, c.Candidate)
@@ -131,12 +161,16 @@ func (c ContractClient) Vote() (*types.Transaction, error) {
 }
 
 // UnVote sends a transaction to un-vote for a candidate
-func (c ContractClient) UnVote() (*types.Transaction, error) {
+func (c *ContractClient) UnVote() (*types.Transaction, error) {
 	optTrans := &bind.TransactOpts{
 		From:     c.TranOps.From,
 		Signer:   c.TranOps.Signer,
 		GasLimit: c.GasLimit,
 		Value:    c.Amount,
+	}
+
+	if c.TranOps.Nonce != nil {
+		optTrans.Nonce = c.TranOps.Nonce
 	}
 
 	tx, err := c.Contract.Unvote(optTrans, c.Candidate, c.Amount)
@@ -148,7 +182,7 @@ func (c ContractClient) UnVote() (*types.Transaction, error) {
 }
 
 // Resign sends a transaction to re-sign for a candidate
-func (c ContractClient) Resign() (*types.Transaction, error) {
+func (c *ContractClient) Resign() (*types.Transaction, error) {
 	optTrans := &bind.TransactOpts{
 		From:     c.TranOps.From,
 		Signer:   c.TranOps.Signer,
@@ -164,7 +198,7 @@ func (c ContractClient) Resign() (*types.Transaction, error) {
 }
 
 // Register sends a transaction to register for a candidate
-func (c ContractClient) Register() (*types.Transaction, error) {
+func (c *ContractClient) Register() (*types.Transaction, error) {
 	optTrans := &bind.TransactOpts{
 		From:     c.TranOps.From,
 		Signer:   c.TranOps.Signer,
@@ -181,7 +215,7 @@ func (c ContractClient) Register() (*types.Transaction, error) {
 }
 
 // GetAllCandidates returns list candidate from SC
-func (c ContractClient) GetAllCandidates(opts *bind.CallOpts) ([]common.Address, error) {
+func (c *ContractClient) GetAllCandidates(opts *bind.CallOpts) ([]common.Address, error) {
 	response, err := c.Contract.GetListCandidates(opts)
 	if err != nil {
 		return nil, err
@@ -190,7 +224,7 @@ func (c ContractClient) GetAllCandidates(opts *bind.CallOpts) ([]common.Address,
 }
 
 // GetVoters returns list voters for a candidate from SC
-func (c ContractClient) GetVoters(opts *bind.CallOpts) ([]common.Address, error) {
+func (c *ContractClient) GetVoters(opts *bind.CallOpts) ([]common.Address, error) {
 	response, err := c.Contract.GetVoters(opts, c.Candidate)
 	if err != nil {
 		return nil, err
@@ -198,11 +232,29 @@ func (c ContractClient) GetVoters(opts *bind.CallOpts) ([]common.Address, error)
 	return response, nil
 }
 
+// GetVoterStake returns the staking of a voter from SC
+func (c *ContractClient) GetVoterStake(opts *bind.CallOpts, voter common.Address) (*big.Int, error) {
+	response, err := c.Contract.GetVoterStake(opts, c.Candidate, voter)
+	if err != nil {
+		return nil, err
+	}
+	return response, nil
+}
+
 // GetCandidateData returns the data of a candidate form SC
-func (c ContractClient) getCandidateData(opts *bind.CallOpts) (bool, common.Address, *big.Int, error) {
+func (c *ContractClient) getCandidateData(opts *bind.CallOpts) (bool, common.Address, *big.Int, error) {
 	response, err := c.Contract.GetCandidateData(opts, c.Candidate)
 	if err != nil {
 		return false, common.Address{}, nil, err
 	}
 	return response.IsActiveCandidate, response.Owner, response.TotalStake, nil
+}
+
+// GetVoterStakes returns the staking of a voter from SC
+func (c *ContractClient) GetVoterStakes(opts *bind.CallOpts, voters []common.Address) ([]*big.Int, error) {
+	response, err := c.Contract.GetVoterStakes(opts, c.Candidate, voters)
+	if err != nil {
+		return nil, err
+	}
+	return response, nil
 }
